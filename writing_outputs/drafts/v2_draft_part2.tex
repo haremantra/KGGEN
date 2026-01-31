@@ -1,0 +1,56 @@
+\section{Introduction}
+
+\subsection{Background and Motivation}
+
+Legal contract review represents one of the most time-consuming and costly processes in modern legal practice. Law firms spend approximately 50\% of their time reviewing contracts, with billing rates typically ranging from \$500 to \$900 per hour in the United States~\cite{ceb2017contract}. This translates to hundreds of thousands of dollars in transaction costs for companies seeking to verify that contracts contain no problematic obligations or requirements. The high cost of contract review creates significant barriers: small businesses and individuals often sign contracts without reading them, leading to predatory behavior and consumer harm~\cite{hendrycks2021cuad}.
+
+Contract review work falls into two categories: (1) \textbf{contract analysis}, which involves finding ``needles in a haystack'' by manually reviewing hundreds of pages to identify relevant clauses such as termination dates, anti-assignment provisions, or exclusivity terms; and (2) \textbf{counseling}, which requires experienced lawyers to assess risk and advise on business implications. While the latter demands expert judgment, the former represents repetitive, tedious work that is amenable to automation~\cite{hendrycks2021cuad}.
+
+Despite recent advances in natural language processing (NLP), particularly with large Transformer models~\cite{devlin2019bert, liu2019roberta, he2020deberta}, many specialized domains including legal contract review remain largely untouched by deep learning. The primary bottleneck is the lack of large, expertly-annotated datasets in specialized domains. Creating such datasets requires expensive expert annotators who are often short on time and command high prices~\cite{hendrycks2021cuad}.
+
+\subsection{KGGEN Methodology}
+
+KGGen~\cite{mo2025kggen} addresses the fundamental challenge of knowledge graph (KG) scarcity by leveraging language models to extract high-quality graphs from plain text. Unlike existing KG generators such as OpenIE~\cite{angeli2015openie} and Microsoft's GraphRAG~\cite{larson2024graphrag}, which lack effective mechanisms for entity resolution and relation normalization, KGGen employs a novel three-stage pipeline:
+
+\textbf{Stage 1: Entity and Relation Extraction.} Using language models (specifically Google Gemini 2.0 Flash) with DSPy signatures, KGGen extracts subject-predicate-object triples from unstructured text. This two-step approach first identifies entities, then extracts relationships between them, ensuring consistency across the graph.
+
+\textbf{Stage 2: Aggregation.} After extracting triples from each source text, KGGen collects unique entities and edges across all sources and combines them into a single graph. All entities and edges are normalized to lowercase to reduce redundancy without requiring LLM processing.
+
+\textbf{Stage 3: Entity and Edge Resolution.} The key innovation in KGGen is its iterative clustering algorithm that merges nodes and edges representing the same real-world entities or concepts. Using S-BERT embeddings, k-means clustering (128-item clusters), and a hybrid BM25 and semantic similarity approach (top-16 retrieval), KGGen identifies duplicates and selects canonical representatives. This significantly reduces the sparsity problem that plagues existing extractors, where nearly as many unique relation types exist as edges~\cite{mo2025kggen}.
+
+KGGen achieves 66.07\% accuracy on the MINE-1 benchmark (compared to 47.80\% for GraphRAG and 29.84\% for OpenIE) while producing more concise and generalizable entities and relations. On large-scale extraction tasks (1M characters), KGGen reuses each relation type an average of 10 times, while GraphRAG reuses each type only 2 times regardless of corpus size. Additionally, KGGen demonstrates superior scaling properties: it processes 1M characters in 551 seconds total versus GraphRAG's 2,319 seconds for extraction alone~\cite{mo2025kggen}.
+
+\subsection{CUAD Dataset}
+
+The Contract Understanding Atticus Dataset (CUAD)~\cite{hendrycks2021cuad} represents the first large-scale, expert-annotated dataset for legal contract review. Created by The Atticus Project with dozens of legal experts, CUAD consists of:
+
+\begin{itemize}
+    \item \textbf{510 contracts} spanning 25 different contract types (license agreements, service agreements, joint ventures, etc.)
+    \item \textbf{13,101 labeled clauses} across 41 label categories
+    \item \textbf{Expert annotations} by law students who underwent 70-100 hours of training, verified by experienced attorneys through multiple review rounds
+    \item \textbf{Conservative pecuniary value} exceeding \$2 million (9,283 pages reviewed at least 4 times, 5-10 minutes per page, at \$500/hour)
+\end{itemize}
+
+The 41 label categories are organized into three groups: (1) \textbf{General Information} (parties, dates, governing law, license grants), (2) \textbf{Restrictive Covenants} (non-compete, exclusivity, anti-assignment, no-solicit clauses), and (3) \textbf{Revenue Risks} (liability caps, minimum commitments, audit rights, termination provisions)~\cite{hendrycks2021cuad}.
+
+Contracts in CUAD range from a few pages to over 100 pages, with an average of 18.2 pages. The dataset covers 25 contract types including Software License Agreements, Service Agreements, Joint Venture Agreements, Distribution Agreements, and Technology Transfer Agreements. Labeled clauses make up approximately 10\% of each contract on average, meaning only about 0.25\% of each contract is highlighted for each specific label---a true ``needle in a haystack'' problem.
+
+State-of-the-art Transformer models show promising but nascent performance on CUAD. DeBERTa-xlarge achieves 44.0\% Precision @ 80\% Recall and 47.8\% AUPR, substantially better than BERT-base at 8.2\% and 32.4\% respectively, but with significant room for improvement~\cite{hendrycks2021cuad}. Performance varies substantially across label categories, from near 100\% AUPR for some labels (Document Name, Parties, Agreement Date) to only 20-30\% AUPR for others (Covenant Not to Sue, IP Ownership Assignment).
+
+\subsection{Document Purpose and Scope}
+
+This Product Requirements Document (PRD) defines the specifications for a knowledge graph-based legal contract analysis system that applies the KGGEN methodology to the CUAD dataset. The system targets \textbf{technology agreements} within the CUAD dataset, focusing on clauses particularly relevant to software licensing, IP ownership, SaaS terms, and technology transfer.
+
+\textbf{Target Audience:} This PRD addresses a team of engineers building AI software for lawyers, including senior practicing lawyers who will validate the system and guide product development.
+
+\textbf{Key Objectives:}
+\begin{enumerate}
+    \item Design a knowledge graph ontology mapping all 41 CUAD label categories to a structured KG schema suitable for technology agreements
+    \item Implement the KGGEN pipeline adapted for legal contract extraction with domain-specific optimizations
+    \item Build a retrieval mechanism that provides relevant KG context to an LLM for contract analysis queries
+    \item Create interfaces for lawyers to upload contracts, query the knowledge graph semantically, and receive AI-assisted analysis
+    \item Achieve extraction accuracy and usability suitable for professional legal practice with human-in-the-loop validation
+\end{enumerate}
+
+\textbf{Out of Scope:} This initial phase does not cover (1) non-technology contract types (employment, real estate, etc.), (2) automated legal advice or risk assessment without human review, (3) contract generation or drafting capabilities, or (4) multi-jurisdictional legal analysis beyond common law systems.
+

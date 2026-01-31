@@ -1,0 +1,245 @@
+\section{LLM Context Retrieval Mechanism}
+
+\subsection{Query Processing Pipeline}
+
+\begin{figure}[H]
+\centering
+\includegraphics[width=0.95\textwidth]{../figures/llm_retrieval_mechanism.png}
+\caption{LLM context retrieval mechanism for contract analysis showing semantic embedding, hybrid retrieval, multi-hop expansion, and LLM synthesis.}
+\label{fig:retrieval}
+\end{figure}
+
+The retrieval mechanism (Figure~\ref{fig:retrieval}) converts natural language queries into structured knowledge graph context for LLM-powered analysis. The pipeline follows established RAG (Retrieval-Augmented Generation) principles adapted for legal contract knowledge graphs.
+
+\subsubsection{Stage 1: Query Understanding}
+
+\textbf{Input:} Natural language legal question, e.g., ``What are the termination conditions for contracts with Beta Inc?''
+
+\textbf{Query Parsing:}
+\begin{itemize}
+    \item \textbf{Intent Classification:} Classify query intent (information extraction, comparison, risk assessment, compliance check)
+    \item \textbf{Entity Extraction:} Identify mentioned entities (``Beta Inc'', ``termination'')
+    \item \textbf{Scope Detection:} Determine if query targets single contract or portfolio-wide
+    \item \textbf{CUAD Label Mapping:} Map query to relevant CUAD categories (``Termination for Convenience'', ``Notice Period to Terminate Renewal'')
+\end{itemize}
+
+\textbf{Query Expansion:} Generate synonyms and related terms:
+\begin{itemize}
+    \item ``termination'' $\rightarrow$ [``terminate'', ``termination conditions'', ``end agreement'', ``cancel contract'']
+    \item ``Beta Inc'' $\rightarrow$ [``Beta Inc'', ``Beta Incorporated'', ``the Licensee'']
+\end{itemize}
+
+\subsection{Embedding Models}
+
+\textbf{Model:} all-MiniLM-L6-v2 from SentenceTransformers~\cite{mo2025kggen}
+
+\textbf{Specifications:}
+\begin{itemize}
+    \item Embedding Dimension: 384
+    \item Max Sequence Length: 512 tokens
+    \item Model Size: 80MB
+    \item Inference Speed: 1000 texts/second on CPU
+\end{itemize}
+
+\textbf{Embedding Process:}
+\begin{enumerate}
+    \item Tokenize query using SentenceTransformers tokenizer
+    \item Generate 384-dimensional embedding vector
+    \item Normalize embedding to unit length for cosine similarity
+    \item Store query embedding for retrieval
+\end{enumerate}
+
+\textbf{Triple Embedding:} Pre-compute embeddings for all KG triples:
+\begin{itemize}
+    \item \textbf{Format:} ``[Subject] [Predicate] [Object]''
+    \item \textbf{Example:} ``Contract grants\_license non-exclusive worldwide perpetual license''
+    \item \textbf{Storage:} Qdrant vector database with metadata (contract\_id, confidence\_score, page\_number)
+\end{itemize}
+
+\subsection{Hybrid Retrieval Strategy}
+
+Hybrid retrieval combines keyword matching (BM25) and semantic similarity to achieve robust retrieval~\cite{mo2025kggen}.
+
+\subsubsection{BM25 Keyword Retrieval}
+
+\textbf{Algorithm:} Elasticsearch BM25 with parameters k1=1.2, b=0.75
+
+\textbf{Process:}
+\begin{enumerate}
+    \item Index all KG triples in Elasticsearch as documents
+    \item Compute term frequencies (TF) and inverse document frequencies (IDF)
+    \item For query, compute BM25 score for each indexed triple
+    \item Retrieve top-100 triples by BM25 score
+\end{enumerate}
+
+\textbf{Strengths:} Precise keyword matching, handles exact terminology, fast retrieval (<50ms)
+
+\textbf{Weaknesses:} Misses semantic equivalents (``terminate'' vs. ``cancel''), sensitive to vocabulary mismatch
+
+\subsubsection{Semantic Similarity Retrieval}
+
+\textbf{Algorithm:} Cosine similarity between query embedding and triple embeddings
+
+\textbf{Process:}
+\begin{enumerate}
+    \item Embed query using all-MiniLM-L6-v2
+    \item Retrieve top-100 triples by cosine similarity from Qdrant vector database
+    \item Qdrant uses HNSW index for fast approximate nearest neighbor search
+\end{enumerate}
+
+\textbf{Strengths:} Captures semantic equivalence, robust to vocabulary variations, handles synonyms
+
+\textbf{Weaknesses:} May retrieve loosely related content, requires quality embeddings
+
+\subsubsection{Score Fusion}
+
+Combine BM25 and semantic scores using weighted average:
+
+\[
+\text{score}_{\text{hybrid}} = \alpha \cdot \text{score}_{\text{BM25}} + (1-\alpha) \cdot \text{score}_{\text{semantic}}
+\]
+
+\textbf{Weight Selection:} $\alpha = 0.5$ (equal weighting) based on KGGEN methodology~\cite{mo2025kggen}
+
+\textbf{Final Retrieval:} Select top-k triples by hybrid score, where k=10 for initial retrieval
+
+\subsection{Multi-Hop Graph Traversal}
+
+After retrieving top-k triples, expand context by traversing the knowledge graph.
+
+\textbf{Expansion Algorithm:}
+\begin{enumerate}
+    \item Extract nodes from top-k retrieved triples (subjects and objects)
+    \item For each extracted node, traverse 2-hop neighborhood:
+    \begin{itemize}
+        \item 1-hop: Direct neighbors connected by any relationship
+        \item 2-hop: Neighbors of neighbors
+    \end{itemize}
+    \item Collect all triples within 2-hop neighborhood
+    \item Filter to relevant relationship types (exclude noisy relationships)
+    \item Add up to 10 additional triples from multi-hop expansion
+\end{enumerate}
+
+\textbf{Cypher Query Example (Neo4j):}
+\begin{verbatim}
+MATCH path = (start_node)-[*1..2]-(end_node)
+WHERE start_node.id IN $retrieved_node_ids
+RETURN path
+LIMIT 10
+\end{verbatim}
+
+\textbf{Rationale:} Multi-hop traversal captures contextual information not directly retrieved. For example:
+\begin{itemize}
+    \item Query: ``What are termination conditions?''
+    \item Direct retrieval: (Contract)-[DEFINES\_TERMINATION]$\rightarrow$(Termination)
+    \item 1-hop expansion: (Termination)-[REQUIRES\_NOTICE]$\rightarrow$(Notice Period)
+    \item 2-hop expansion: (Notice Period)-[BINDS\_PARTY]$\rightarrow$(Party)
+\end{itemize}
+
+\subsection{Context Assembly for LLM}
+
+Assemble retrieved knowledge graph context into structured prompt for LLM synthesis.
+
+\textbf{Context Components:}
+\begin{enumerate}
+    \item \textbf{Retrieved Triples:} Top-10 from hybrid retrieval + 10 from multi-hop expansion
+    \item \textbf{Source Text Chunks:} Original contract text corresponding to each triple
+    \item \textbf{Metadata:} Contract name, page numbers, confidence scores
+    \item \textbf{User Query:} Original natural language question
+\end{enumerate}
+
+\textbf{Prompt Template:}
+\begin{verbatim}
+SYSTEM: You are a legal contract analysis assistant. Use the 
+following knowledge graph triples and contract text to answer 
+the question accurately. Only use information provided; do not 
+speculate. Cite specific contract sections.
+
+KNOWLEDGE GRAPH TRIPLES:
+{formatted_triples}
+
+CONTRACT TEXT EVIDENCE:
+{text_chunks}
+
+USER QUESTION: {query}
+
+INSTRUCTIONS:
+1. Identify relevant triples and text
+2. Synthesize clear answer
+3. Cite specific pages and sections
+4. Note confidence level and any ambiguities
+5. Suggest follow-up review if needed
+
+ANSWER:
+\end{verbatim}
+
+\textbf{LLM Synthesis:}
+\begin{itemize}
+    \item Model: GPT-4o (higher quality for legal analysis)
+    \item Temperature: 0.1 (mostly deterministic)
+    \item Max Tokens: 1000 (sufficient for detailed answers)
+    \item Stop Sequences: None (allow full answer generation)
+\end{itemize}
+
+\textbf{Post-Processing:}
+\begin{enumerate}
+    \item Parse LLM output for citations
+    \item Validate cited page numbers against source documents
+    \item Extract confidence indicators (``likely'', ``possibly'', ``definitely'')
+    \item Format answer with highlighted contract sections
+    \item Generate follow-up query suggestions
+\end{enumerate}
+
+\subsection{Query Examples}
+
+\begin{figure}[H]
+\centering
+\includegraphics[width=0.95\textwidth]{../figures/tech_agreement_workflow.png}
+\caption{Technology agreement analysis workflow showing contract upload, KGGEN extraction, semantic queries, and results presentation.}
+\label{fig:workflow}
+\end{figure}
+
+\textbf{Example 1: Exclusivity Terms}
+
+\textit{Query:} ``What are the exclusivity terms in this license agreement?''
+
+\textit{Retrieved Triples:}
+\begin{itemize}
+    \item (Contract)-[CONTAINS\_CLAUSE]$\rightarrow$(Exclusivity Clause)
+    \item (Exclusivity Clause)-[IMPOSES\_OBLIGATION]$\rightarrow$(Exclusive Dealing Obligation)
+    \item (Exclusive Dealing Obligation)-[BINDS\_PARTY]$\rightarrow$(Licensee)
+\end{itemize}
+
+\textit{LLM Synthesis:}
+``This license agreement contains an exclusivity provision binding the Licensee (Page 12, Section 5.2). The Licensee is prohibited from licensing, purchasing, or using competing software products during the term of this agreement and for 18 months thereafter. This is a restrictive covenant that limits the Licensee's ability to work with alternative vendors.''
+
+\textbf{Example 2: IP Ownership}
+
+\textit{Query:} ``Who owns IP created under this agreement?''
+
+\textit{Retrieved Triples:}
+\begin{itemize}
+    \item (Contract)-[COVERS\_IP]$\rightarrow$(IP Rights)
+    \item (IP Rights)-[ownership: ``Licensor'']
+    \item (IP Rights)-[ip\_type: ``derivative works'']
+    \item (Licensee)-[ASSIGNS\_IP]$\rightarrow$(IP Rights)
+\end{itemize}
+
+\textit{LLM Synthesis:}
+``All intellectual property created under this agreement, including derivative works and improvements, becomes the sole property of the Licensor (Page 18, Section 8.1). The Licensee assigns all right, title, and interest in such IP to the Licensor. This includes inventions, patents, copyrights, and trade secrets developed using the Licensed Software.''
+
+\textbf{Example 3: Termination Conditions}
+
+\textit{Query:} ``What are the termination conditions and notice requirements?''
+
+\textit{Retrieved Triples:}
+\begin{itemize}
+    \item (Contract)-[DEFINES\_TERMINATION]$\rightarrow$(Termination)
+    \item (Termination)-[for\_cause: true, for\_convenience: true]
+    \item (Termination)-[REQUIRES\_NOTICE]$\rightarrow$(90 days)
+    \item (Termination Clause)-[SPECIFIES\_DAMAGES]$\rightarrow$(Liquidated Damages)
+\end{itemize}
+
+\textit{LLM Synthesis:}
+``This agreement may be terminated: (1) For cause immediately upon written notice of material breach (Page 24, Section 11.2), or (2) For convenience by either party with 90 days' advance written notice (Page 24, Section 11.3). Early termination for convenience triggers liquidated damages equal to 6 months of fees. The agreement automatically expires on January 15, 2027 unless renewed.''
+

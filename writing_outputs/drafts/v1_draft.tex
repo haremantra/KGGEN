@@ -1,0 +1,513 @@
+\documentclass[11pt,letterpaper]{article}
+
+% Packages
+\usepackage[utf8]{inputenc}
+\usepackage[margin=1in]{geometry}
+\usepackage{graphicx}
+\usepackage{hyperref}
+\usepackage{cite}
+\usepackage{amsmath}
+\usepackage{booktabs}
+\usepackage{caption}
+\usepackage{subcaption}
+\usepackage{float}
+\usepackage{xcolor}
+\usepackage{listings}
+\usepackage{fancyhdr}
+
+% Header and footer setup
+\pagestyle{fancy}
+\fancyhf{}
+\rhead{K-Dense Web}
+\lhead{KGGEN-CUAD Knowledge Graph PRD}
+\rfoot{\thepage}
+\lfoot{Generated using K-Dense Web (\href{https://k-dense.ai}{k-dense.ai})}
+
+% Hyperref setup
+\hypersetup{
+    colorlinks=true,
+    linkcolor=blue,
+    filecolor=magenta,
+    urlcolor=cyan,
+    citecolor=blue,
+}
+
+% Title information
+\title{\textbf{Product Requirements Document:\\KGGEN-based Knowledge Graph System\\for Legal Contract Analysis}}
+
+\author{
+    K-Dense Web\\
+    \texttt{contact@k-dense.ai}
+}
+
+\date{January 12, 2026}
+
+\begin{document}
+
+\maketitle
+
+\begin{abstract}
+% TO BE WRITTEN LAST
+\end{abstract}
+
+\section{Executive Summary}
+% TODO: High-level overview of the KGGEN-CUAD system
+% - Problem statement
+% - Proposed solution
+% - Key benefits
+% - Target users
+
+\section{Introduction}
+
+\subsection{Background and Motivation}
+% TODO: Contract review challenges in legal industry
+% - Cost and time burden
+% - Expert knowledge requirements
+% - Current limitations
+
+\subsection{KGGEN Methodology}
+% TODO: Overview of KGGEN approach
+% - Entity and relation extraction
+% - Aggregation
+% - Entity resolution
+% - Benefits over existing methods
+
+\subsection{CUAD Dataset}
+% TODO: Overview of CUAD
+% - 510 contracts, 13,000+ annotations
+% - 41 label categories
+% - Expert-annotated by legal professionals
+
+\subsection{Document Purpose and Scope}
+% TODO: PRD scope
+% - Focus on technology agreements
+% - Target audience: engineering team + legal experts
+% - Deliverables and objectives
+
+\section{Product Scope and Objectives}
+
+\subsection{Target Users}
+% TODO: User personas
+% - Legal professionals
+% - Engineering team
+% - Business stakeholders
+
+\subsection{Use Cases}
+% TODO: Key use cases
+% - Contract upload and analysis
+% - Semantic search for clauses
+% - Risk identification
+% - Compliance checking
+
+\subsection{Success Metrics}
+% TODO: KPIs
+% - Extraction accuracy
+% - Query response time
+% - User satisfaction
+% - Time savings
+
+\subsection{Out of Scope}
+% TODO: Limitations
+% - Non-technology contracts (initial phase)
+% - Automated legal advice
+% - Contract generation
+
+\section{Technical Architecture}
+
+\subsection{KGGEN Pipeline for Legal Contracts}
+
+\begin{figure}[H]
+\centering
+\includegraphics[width=\textwidth]{../figures/graphical_abstract.png}
+\caption{Graphical abstract showing the end-to-end KGGEN-CUAD knowledge graph system architecture.}
+\label{fig:graphical_abstract}
+\end{figure}
+
+% TODO: Detailed description of KGGEN adapted for legal domain
+
+\subsubsection{Stage 1: Entity and Relation Extraction}
+% TODO: LLM-based extraction
+% - DSPy signatures
+% - Subject-predicate-object triples
+% - Google Gemini 2.0 Flash model
+
+\begin{figure}[H]
+\centering
+\includegraphics[width=0.9\textwidth]{../figures/kggen_pipeline_legal.png}
+\caption{KGGEN pipeline architecture adapted for legal contract processing.}
+\label{fig:kggen_pipeline}
+\end{figure}
+
+\subsubsection{Stage 2: Aggregation}
+% TODO: Graph combination
+% - Normalization
+% - Deduplication
+% - Cross-contract integration
+
+\subsubsection{Stage 3: Entity and Edge Resolution}
+% TODO: Clustering and deduplication
+% - S-BERT embeddings
+% - K-means clustering
+% - BM25 + semantic retrieval
+% - LLM-based canonical selection
+
+\subsection{System Architecture}
+
+\begin{figure}[H]
+\centering
+\includegraphics[width=0.9\textwidth]{../figures/system_architecture.png}
+\caption{Multi-tier system architecture for the KGGEN-CUAD platform.}
+\label{fig:system_architecture}
+\end{figure}
+
+% TODO: System components
+% - Data layer
+% - Processing layer
+% - Storage layer
+% - Application layer
+% - Presentation layer
+
+\subsection{Technology Stack}
+% TODO: Technologies and tools
+% - LLM: Google Gemini 2.0 Flash
+% - Embeddings: S-BERT, all-MiniLM-L6-v2
+% - Graph database: Neo4j
+% - Vector store
+% - API framework
+% - Frontend technologies
+
+\section{Ontology Definition: CUAD Label Mapping}
+
+\subsection{CUAD Ontology Overview}
+
+\begin{figure}[H]
+\centering
+\includegraphics[width=0.9\textwidth]{../figures/cuad_ontology_hierarchy.png}
+\caption{CUAD ontology hierarchy organized by three main categories covering 41 label types.}
+\label{fig:cuad_ontology}
+\end{figure}
+
+% TODO: Three-category structure
+% - General Information (11 labels)
+% - Restrictive Covenants (15 labels)
+% - Revenue Risks (15 labels)
+
+\subsection{Category 1: General Information}
+% TODO: Detailed mapping
+% - Parties, dates, document info
+% - Governing law
+% - License grants
+% - Renewal terms
+
+\subsection{Category 2: Restrictive Covenants}
+% TODO: Detailed mapping
+% - Non-compete clauses
+% - Exclusivity provisions
+% - Anti-assignment
+% - No-solicit terms
+% - IP ownership assignment
+
+\subsection{Category 3: Revenue Risks}
+% TODO: Detailed mapping
+% - Liability provisions
+% - Minimum commitments
+% - Audit rights
+% - Termination clauses
+% - Liquidated damages
+
+\subsection{Technology Agreement Focus}
+% TODO: Technology-specific clauses
+% - Software licensing
+% - Source code escrow
+% - IP rights in developed technology
+% - SaaS terms
+% - API access rights
+
+\section{Data Schema and Knowledge Graph Structure}
+
+\subsection{Entity Types}
+
+\begin{figure}[H]
+\centering
+\includegraphics[width=0.9\textwidth]{../figures/contract_kg_schema.png}
+\caption{Knowledge graph schema showing entity types and relationships for legal contracts.}
+\label{fig:kg_schema}
+\end{figure}
+
+% TODO: Entity type definitions
+% - Contract
+% - Party
+% - Clause
+% - Date
+% - License
+% - Obligation
+% - Right
+% - Law
+
+\subsection{Relationship Types}
+% TODO: Relationship definitions
+% - HAS_PARTY
+% - CONTAINS_CLAUSE
+% - EFFECTIVE_ON
+% - GRANTS_LICENSE
+% - IMPOSES_OBLIGATION
+% - RESTRICTS_ACTION
+% - GOVERNED_BY
+
+\subsection{Property Schemas}
+% TODO: Node and edge properties
+% - Contract properties
+% - Clause properties
+% - Relationship properties
+
+\subsection{Example Knowledge Graph}
+% TODO: Concrete example
+% - Technology licensing agreement
+% - Parties and roles
+% - Key clauses mapped
+% - Relationship network
+
+\section{LLM Context Retrieval Mechanism}
+
+\subsection{Query Processing Pipeline}
+
+\begin{figure}[H]
+\centering
+\includegraphics[width=0.9\textwidth]{../figures/llm_retrieval_mechanism.png}
+\caption{LLM context retrieval mechanism for contract analysis queries.}
+\label{fig:retrieval}
+\end{figure}
+
+% TODO: Query flow
+% - Legal question input
+% - Semantic embedding
+% - Hybrid retrieval (BM25 + cosine)
+% - Top-k triple selection
+% - Multi-hop expansion
+% - Context assembly
+% - LLM synthesis
+
+\subsection{Embedding Models}
+% TODO: Embedding approach
+% - all-MiniLM-L6-v2 for queries and triples
+% - Semantic similarity computation
+% - Vector indexing
+
+\subsection{Hybrid Retrieval Strategy}
+% TODO: Combined scoring
+% - BM25 keyword matching
+% - Semantic cosine similarity
+% - Score fusion
+% - Ranking algorithm
+
+\subsection{Multi-Hop Graph Traversal}
+% TODO: Context expansion
+% - 2-hop neighborhood exploration
+% - Related clause discovery
+% - Dependency identification
+
+\subsection{Context Assembly for LLM}
+% TODO: Prompt construction
+% - Selected triples formatting
+% - Source text chunk inclusion
+% - Structured prompt design
+% - LLM synthesis process
+
+\subsection{Query Examples}
+% TODO: Example queries and responses
+% - "What are the exclusivity terms?"
+% - "Who owns IP created under this agreement?"
+% - "What are the termination conditions?"
+% - "Are there any non-compete restrictions?"
+
+\section{User Interface and Workflow}
+
+\subsection{Contract Upload and Processing}
+
+\begin{figure}[H]
+\centering
+\includegraphics[width=0.9\textwidth]{../figures/tech_agreement_workflow.png}
+\caption{Technology agreement analysis workflow showing contract upload, extraction, and query interface.}
+\label{fig:workflow}
+\end{figure}
+
+% TODO: Upload flow
+% - File format support (PDF, DOCX)
+% - OCR for scanned documents
+% - Processing status tracking
+
+\subsection{Knowledge Graph Visualization}
+% TODO: Graph display
+% - Interactive network view
+% - Node and edge filtering
+% - Clause highlighting
+
+\subsection{Semantic Search Interface}
+% TODO: Query interface
+% - Natural language input
+% - Query suggestions
+% - Search history
+
+\subsection{Results Presentation}
+% TODO: Results display
+% - Highlighted contract sections
+% - Graph-based context
+% - Confidence scores
+% - Source attribution
+
+\subsection{Analysis Dashboard}
+% TODO: Dashboard features
+% - Contract summary
+% - Risk indicators
+% - Clause coverage matrix
+% - Comparison with similar contracts
+
+\section{Implementation Roadmap}
+
+\subsection{Phase 1: Core Infrastructure (Months 1-3)}
+% TODO: Foundation
+% - Data pipeline setup
+% - KGGEN engine implementation
+% - Graph database deployment
+% - API development
+
+\subsection{Phase 2: CUAD Integration (Months 4-6)}
+% TODO: Ontology mapping
+% - CUAD label extraction
+% - Technology agreement focus
+% - Validation with legal experts
+% - Testing on CUAD dataset
+
+\subsection{Phase 3: Retrieval System (Months 7-9)}
+% TODO: Query engine
+% - Embedding model integration
+% - Hybrid retrieval implementation
+% - LLM synthesis pipeline
+% - Query optimization
+
+\subsection{Phase 4: User Interface (Months 10-12)}
+% TODO: Frontend development
+% - Contract upload interface
+% - Graph visualization
+% - Search and analysis tools
+% - User testing and refinement
+
+\subsection{Phase 5: Production Deployment (Months 13-15)}
+% TODO: Launch preparation
+% - Performance optimization
+% - Security hardening
+% - User training
+% - Beta launch with legal team
+
+\section{Requirements Specification}
+
+\subsection{Functional Requirements}
+% TODO: Feature requirements
+% - FR1: Contract upload and parsing
+% - FR2: KGGEN extraction pipeline
+% - FR3: Knowledge graph storage
+% - FR4: Semantic search
+% - FR5: Multi-hop retrieval
+% - FR6: LLM-based analysis
+% - FR7: Results visualization
+
+\subsection{Non-Functional Requirements}
+% TODO: Quality attributes
+% - NFR1: Extraction accuracy > 85\%
+% - NFR2: Query response time < 3 seconds
+% - NFR3: System availability > 99.5\%
+% - NFR4: Scalability to 10,000+ contracts
+% - NFR5: Security and privacy compliance
+% - NFR6: API rate limiting
+
+\subsection{Data Requirements}
+% TODO: Data specs
+% - Input: PDF, DOCX contracts
+% - CUAD training data integration
+% - Knowledge graph storage capacity
+% - Embedding vector storage
+
+\subsection{Performance Requirements}
+% TODO: Performance targets
+% - Contract processing: < 2 minutes per contract
+% - Graph construction: < 5 minutes for 100 contracts
+% - Query latency: < 3 seconds
+% - Concurrent users: 50+
+
+\subsection{Security and Privacy Requirements}
+% TODO: Security specs
+% - End-to-end encryption
+% - Access control
+% - Audit logging
+% - GDPR compliance
+% - Attorney-client privilege protection
+
+\section{Risk Assessment and Mitigation}
+
+\subsection{Technical Risks}
+% TODO: Technical challenges
+% - Extraction accuracy for complex clauses
+% - Entity resolution errors
+% - LLM hallucination
+% - Scalability challenges
+
+\subsection{Legal and Compliance Risks}
+% TODO: Legal considerations
+% - Unauthorized practice of law
+% - Liability for incorrect analysis
+% - Data privacy concerns
+% - Professional responsibility
+
+\subsection{Operational Risks}
+% TODO: Operational challenges
+% - User adoption
+% - Training requirements
+% - Maintenance burden
+% - Cost management
+
+\subsection{Mitigation Strategies}
+% TODO: Risk mitigation
+% - Expert validation workflows
+% - Confidence scoring and disclaimers
+% - Human-in-the-loop review
+% - Continuous monitoring and improvement
+
+\section{Evaluation and Validation}
+
+\subsection{CUAD Benchmark Performance}
+% TODO: Benchmark results
+% - MINE-1 and MINE-2 scores
+% - Comparison with baselines
+% - Technology agreement subset analysis
+
+\subsection{Legal Expert Validation}
+% TODO: Expert review
+% - Validation protocol
+% - Inter-annotator agreement
+% - Clause extraction accuracy
+% - Practical usability assessment
+
+\subsection{User Acceptance Testing}
+% TODO: UAT plan
+% - Test scenarios
+% - User feedback collection
+% - Iterative refinement
+
+\subsection{Continuous Improvement}
+% TODO: Improvement cycle
+% - Performance monitoring
+% - Error analysis
+% - Model retraining
+% - Feature enhancement
+
+\section{Conclusion}
+% TODO: Summary and vision
+% - Recap of KGGEN-CUAD system benefits
+% - Impact on legal contract review
+% - Future directions
+% - Call to action for engineering team
+
+\bibliographystyle{plain}
+\bibliography{../references/references}
+
+\end{document}

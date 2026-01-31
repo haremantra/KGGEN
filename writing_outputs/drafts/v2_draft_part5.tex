@@ -1,0 +1,208 @@
+\subsection{System Architecture}
+
+\begin{figure}[H]
+\centering
+\includegraphics[width=0.95\textwidth]{../figures/system_architecture.png}
+\caption{Multi-tier system architecture for the KGGEN-CUAD platform showing data layer, processing layer, storage layer, application layer, and presentation layer.}
+\label{fig:system_architecture}
+\end{figure}
+
+The system follows a multi-tier architecture (Figure~\ref{fig:system_architecture}) designed for scalability, maintainability, and separation of concerns.
+
+\subsubsection{Data Layer}
+
+\textbf{CUAD Contract Database:}
+\begin{itemize}
+    \item 510 contracts from CUAD dataset as training/validation data
+    \item 13,101 expert annotations across 41 label categories
+    \item Storage: PostgreSQL for metadata, S3 for PDF/DOCX files
+    \item Indexing: Full-text search with Elasticsearch for rapid contract retrieval
+\end{itemize}
+
+\textbf{EDGAR Data Source:}
+\begin{itemize}
+    \item SEC EDGAR system for additional public contracts
+    \item Automated scraping of Technology Agreements, License Agreements, Service Agreements
+    \item Filtering: Focus on contracts >10 pages, filed within last 5 years
+    \item Volume: Potential 10,000+ additional contracts for knowledge graph expansion
+\end{itemize}
+
+\textbf{User Uploaded Contracts:}
+\begin{itemize}
+    \item Private contracts uploaded by legal teams
+    \item Storage: Encrypted S3 buckets with organization-level access control
+    \item Retention: User-configurable (default 7 years per legal standards)
+\end{itemize}
+
+\subsubsection{Processing Layer}
+
+\textbf{KGGEN Extraction Engine:}
+\begin{itemize}
+    \item Orchestration: Apache Airflow for pipeline management
+    \item Compute: Kubernetes pods for parallel contract processing
+    \item Scaling: Auto-scale based on queue depth (1-20 pods)
+    \item Monitoring: Prometheus metrics for extraction success rate, latency, errors
+\end{itemize}
+
+\textbf{LLM Integration:}
+\begin{itemize}
+    \item Model: Google Gemini 2.0 Flash via OpenRouter API
+    \item Fallback: GPT-4o for complex extractions if Gemini fails
+    \item Rate Limiting: 100 requests/minute per contract
+    \item Cost Optimization: Cache LLM responses for identical contract sections
+\end{itemize}
+
+\textbf{Embedding Services:}
+\begin{itemize}
+    \item Model: S-BERT all-MiniLM-L6-v2 (384-dimensional embeddings)
+    \item Deployment: Self-hosted via FastAPI for cost control
+    \item GPU: Single T4 GPU sufficient for 1000 embeddings/second
+    \item Batch Processing: Embed 100 texts at once for efficiency
+\end{itemize}
+
+\textbf{BM25 Retrieval:}
+\begin{itemize}
+    \item Implementation: Elasticsearch BM25 scoring
+    \item Indexing: Real-time indexing as triples are extracted
+    \item Tuning: k1=1.2, b=0.75 (standard BM25 parameters)
+\end{itemize}
+
+\subsubsection{Storage Layer}
+
+\textbf{Knowledge Graph Database:}
+\begin{itemize}
+    \item Platform: Neo4j Graph Database (Community Edition)
+    \item Schema: Labeled property graph with typed nodes and relationships
+    \item Indexing: Full-text indexes on entity names, relationship types
+    \item Capacity: Support 1M+ nodes, 5M+ relationships
+    \item Backups: Daily snapshots to S3, 30-day retention
+\end{itemize}
+
+\textbf{Vector Store:}
+\begin{itemize}
+    \item Platform: Qdrant vector database
+    \item Embedding Dimension: 384 (matches S-BERT output)
+    \item Index Type: HNSW (Hierarchical Navigable Small World) for fast similarity search
+    \item Performance: <50ms query latency for top-100 retrieval
+    \item Storage: 1GB per 1M embeddings (approximately)
+\end{itemize}
+
+\textbf{Document Store:}
+\begin{itemize}
+    \item Platform: AWS S3 with server-side encryption
+    \item Organization: Bucket per organization for access control
+    \item Lifecycle: Transition to Glacier after 90 days of inactivity
+    \item CDN: CloudFront for fast PDF serving to web interface
+\end{itemize}
+
+\subsubsection{Application Layer}
+
+\textbf{REST API:}
+\begin{itemize}
+    \item Framework: FastAPI (Python)
+    \item Endpoints:
+    \begin{itemize}
+        \item \texttt{POST /contracts/upload} - Upload and process contract
+        \item \texttt{GET /contracts/\{id\}} - Retrieve contract metadata and KG
+        \item \texttt{POST /query/semantic} - Semantic search across contracts
+        \item \texttt{POST /query/analyze} - LLM-powered contract analysis
+        \item \texttt{GET /graph/visualize} - Generate graph visualization
+    \end{itemize}
+    \item Authentication: OAuth 2.0 with JWT tokens
+    \item Rate Limiting: 1000 requests/hour per user
+    \item Documentation: OpenAPI/Swagger auto-generated
+\end{itemize}
+
+\textbf{Semantic Query Engine:}
+\begin{itemize}
+    \item Query Processing: Parse natural language to structured queries
+    \item Hybrid Retrieval: Fuse BM25 and semantic scores
+    \item Multi-hop Traversal: Cypher queries on Neo4j for graph navigation
+    \item Result Ranking: Re-rank by relevance, recency, confidence
+\end{itemize}
+
+\textbf{Contract Analysis Service:}
+\begin{itemize}
+    \item Context Assembly: Retrieve KG triples + source text chunks
+    \item Prompt Engineering: Structured prompts with explicit instructions
+    \item LLM Integration: Call GPT-4o for analysis synthesis
+    \item Citation Extraction: Parse LLM output for source attributions
+\end{itemize}
+
+\subsubsection{Presentation Layer}
+
+\textbf{Web Application:}
+\begin{itemize}
+    \item Framework: React + TypeScript
+    \item UI Components: Material-UI for professional appearance
+    \item State Management: Redux for complex application state
+    \item Routing: React Router for single-page application
+\end{itemize}
+
+\textbf{Key Interfaces:}
+\begin{itemize}
+    \item \textbf{Contract Upload:} Drag-and-drop upload, processing status tracking
+    \item \textbf{Query Interface:} Natural language search bar, query suggestions, search history
+    \item \textbf{Results Viewer:} Highlighted contract sections, confidence scores, graph visualization
+    \item \textbf{Analysis Dashboard:} Contract summaries, risk indicators, clause coverage matrix
+\end{itemize}
+
+\textbf{Graph Visualization:}
+\begin{itemize}
+    \item Library: D3.js or Cytoscape.js for interactive network graphs
+    \item Features: Node filtering, edge filtering, zoom/pan, hover details
+    \item Layout: Force-directed layout for automatic positioning
+    \item Export: SVG/PNG export for reports
+\end{itemize}
+
+\subsection{Technology Stack}
+
+\begin{table}[H]
+\centering
+\caption{Technology stack for KGGEN-CUAD system}
+\begin{tabular}{ll}
+\toprule
+\textbf{Component} & \textbf{Technology} \\
+\midrule
+\textbf{Language Models} & \\
+Primary LLM & Google Gemini 2.0 Flash \\
+Fallback LLM & OpenAI GPT-4o \\
+Embedding Model & S-BERT all-MiniLM-L6-v2 \\
+\midrule
+\textbf{Data Storage} & \\
+Graph Database & Neo4j 5.x \\
+Vector Database & Qdrant \\
+Document Storage & AWS S3 \\
+Metadata Database & PostgreSQL 15 \\
+Search Engine & Elasticsearch 8.x \\
+\midrule
+\textbf{Backend} & \\
+API Framework & FastAPI (Python 3.11) \\
+Task Queue & Celery with Redis \\
+Orchestration & Apache Airflow \\
+Caching & Redis 7.x \\
+\midrule
+\textbf{Frontend} & \\
+Framework & React 18 + TypeScript \\
+UI Library & Material-UI v5 \\
+State Management & Redux Toolkit \\
+Visualization & D3.js / Cytoscape.js \\
+\midrule
+\textbf{Infrastructure} & \\
+Container Platform & Docker + Kubernetes \\
+Cloud Provider & AWS (primary) \\
+CI/CD & GitHub Actions \\
+Monitoring & Prometheus + Grafana \\
+Logging & ELK Stack (Elasticsearch, Logstash, Kibana) \\
+\bottomrule
+\end{tabular}
+\end{table}
+
+\textbf{Development Tools:}
+\begin{itemize}
+    \item \textbf{Version Control:} Git + GitHub
+    \item \textbf{Code Quality:} Pylint, Black, MyPy for Python; ESLint for TypeScript
+    \item \textbf{Testing:} PyTest (backend), Jest (frontend), Locust (load testing)
+    \item \textbf{Documentation:} Sphinx (API docs), Docusaurus (user docs)
+\end{itemize}
+

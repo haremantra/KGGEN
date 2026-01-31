@@ -1,0 +1,282 @@
+\contentsline {section}{\numberline {1}Executive Summary}{7}{section.1}%
+\contentsline {subsection}{\numberline {1.1}Problem Statement}{7}{subsection.1.1}%
+\contentsline {subsection}{\numberline {1.2}Proposed Solution}{7}{subsection.1.2}%
+\contentsline {subsection}{\numberline {1.3}Key Benefits}{7}{subsection.1.3}%
+\contentsline {subsubsection}{\numberline {1.3.1}Technical Benefits}{7}{subsubsection.1.3.1}%
+\contentsline {subsubsection}{\numberline {1.3.2}Business Benefits}{8}{subsubsection.1.3.2}%
+\contentsline {subsubsection}{\numberline {1.3.3}User Benefits}{8}{subsubsection.1.3.3}%
+\contentsline {subsection}{\numberline {1.4}Technology Agreement Focus}{8}{subsection.1.4}%
+\contentsline {subsection}{\numberline {1.5}Success Metrics}{9}{subsection.1.5}%
+\contentsline {paragraph}{Technical Metrics}{9}{section*.2}%
+\contentsline {paragraph}{Business Metrics}{9}{section*.3}%
+\contentsline {paragraph}{Legal Metrics}{9}{section*.4}%
+\contentsline {section}{\numberline {2}Problem Statement \& Scope}{10}{section.2}%
+\contentsline {subsection}{\numberline {2.1}Detailed Problem Analysis}{10}{subsection.2.1}%
+\contentsline {subsubsection}{\numberline {2.1.1}Current State of Contract Analysis}{10}{subsubsection.2.1.1}%
+\contentsline {paragraph}{Quantifiable Challenges}{10}{table.caption.6}%
+\contentsline {subsubsection}{\numberline {2.1.2}Limitations of Existing AI Solutions}{10}{subsubsection.2.1.2}%
+\contentsline {subsubsection}{\numberline {2.1.3}Knowledge Graph Solution Advantages}{10}{subsubsection.2.1.3}%
+\contentsline {subsection}{\numberline {2.2}Scope Definition}{11}{subsection.2.2}%
+\contentsline {subsubsection}{\numberline {2.2.1}In Scope}{11}{subsubsection.2.2.1}%
+\contentsline {subsubsection}{\numberline {2.2.2}Out of Scope (Future Work)}{11}{subsubsection.2.2.2}%
+\contentsline {subsection}{\numberline {2.3}Target Use Cases}{12}{subsection.2.3}%
+\contentsline {subsubsection}{\numberline {2.3.1}Use Case 1: Automated Contract Q\&A}{12}{subsubsection.2.3.1}%
+\contentsline {paragraph}{Description:}{12}{section*.7}%
+\contentsline {paragraph}{Example:}{12}{section*.8}%
+\contentsline {paragraph}{Value:}{12}{section*.9}%
+\contentsline {subsubsection}{\numberline {2.3.2}Use Case 2: Risk Analysis Dashboard}{12}{subsubsection.2.3.2}%
+\contentsline {paragraph}{Description:}{12}{section*.10}%
+\contentsline {paragraph}{Example Queries:}{12}{section*.11}%
+\contentsline {paragraph}{Value:}{12}{section*.12}%
+\contentsline {subsubsection}{\numberline {2.3.3}Use Case 3: Contract Comparison}{12}{subsubsection.2.3.3}%
+\contentsline {paragraph}{Description:}{12}{section*.13}%
+\contentsline {paragraph}{Example:}{13}{section*.14}%
+\contentsline {paragraph}{Value:}{13}{section*.15}%
+\contentsline {subsubsection}{\numberline {2.3.4}Use Case 4: Compliance Verification}{13}{subsubsection.2.3.4}%
+\contentsline {paragraph}{Description:}{13}{section*.16}%
+\contentsline {paragraph}{Example:}{13}{section*.17}%
+\contentsline {paragraph}{Value:}{13}{section*.18}%
+\contentsline {subsubsection}{\numberline {2.3.5}Use Case 5: Due Diligence Acceleration}{13}{subsubsection.2.3.5}%
+\contentsline {paragraph}{Description:}{13}{section*.19}%
+\contentsline {paragraph}{Example:}{13}{section*.20}%
+\contentsline {paragraph}{Value:}{13}{section*.21}%
+\contentsline {section}{\numberline {3}System Architecture}{14}{section.3}%
+\contentsline {subsection}{\numberline {3.1}Architecture Overview}{14}{subsection.3.1}%
+\contentsline {paragraph}{Data Flow:}{14}{section*.23}%
+\contentsline {subsection}{\numberline {3.2}Stage 1: Knowledge Extraction}{14}{subsection.3.2}%
+\contentsline {subsubsection}{\numberline {3.2.1}Purpose}{14}{subsubsection.3.2.1}%
+\contentsline {subsubsection}{\numberline {3.2.2}Input Processing}{14}{subsubsection.3.2.2}%
+\contentsline {paragraph}{Contract Preprocessing:}{14}{section*.24}%
+\contentsline {subsubsection}{\numberline {3.2.3}Two-Step Extraction Process}{15}{subsubsection.3.2.3}%
+\contentsline {paragraph}{Step 1: Entity Extraction}{15}{section*.26}%
+\contentsline {paragraph}{Step 2: Relation Extraction}{16}{section*.27}%
+\contentsline {subsubsection}{\numberline {3.2.4}CUAD Integration}{17}{subsubsection.3.2.4}%
+\contentsline {paragraph}{Label-to-Relation Mapping:}{17}{table.caption.29}%
+\contentsline {paragraph}{Extraction Process:}{18}{section*.30}%
+\contentsline {subsubsection}{\numberline {3.2.5}LLM Configuration}{18}{subsubsection.3.2.5}%
+\contentsline {subsubsection}{\numberline {3.2.6}Output Format}{18}{subsubsection.3.2.6}%
+\contentsline {paragraph}{Example Extracted Triples:}{18}{section*.32}%
+\contentsline {subsubsection}{\numberline {3.2.7}Performance Targets}{19}{subsubsection.3.2.7}%
+\contentsline {subsection}{\numberline {3.3}Stage 2: Knowledge Aggregation}{19}{subsection.3.3}%
+\contentsline {subsubsection}{\numberline {3.3.1}Purpose}{19}{subsubsection.3.3.1}%
+\contentsline {subsubsection}{\numberline {3.3.2}Aggregation Dimensions}{20}{subsubsection.3.3.2}%
+\contentsline {subsubsection}{\numberline {3.3.3}Normalization Process}{20}{subsubsection.3.3.3}%
+\contentsline {paragraph}{Text Normalization:}{20}{section*.33}%
+\contentsline {paragraph}{Legal Term Normalization:}{20}{section*.34}%
+\contentsline {paragraph}{Entity Normalization:}{20}{section*.36}%
+\contentsline {subsubsection}{\numberline {3.3.4}Deduplication}{21}{subsubsection.3.3.4}%
+\contentsline {paragraph}{Exact Match Removal:}{21}{section*.37}%
+\contentsline {paragraph}{Near-Match Identification:}{21}{section*.38}%
+\contentsline {paragraph}{Statistics Tracking:}{21}{section*.39}%
+\contentsline {subsubsection}{\numberline {3.3.5}Output Statistics}{21}{subsubsection.3.3.5}%
+\contentsline {subsubsection}{\numberline {3.3.6}Performance Targets}{21}{subsubsection.3.3.6}%
+\contentsline {subsection}{\numberline {3.4}Stage 3: Entity and Edge Resolution}{22}{subsection.3.4}%
+\contentsline {subsubsection}{\numberline {3.4.1}Purpose}{22}{subsubsection.3.4.1}%
+\contentsline {subsubsection}{\numberline {3.4.2}Five-Step Resolution Algorithm}{22}{subsubsection.3.4.2}%
+\contentsline {paragraph}{Step 1: Embedding and Clustering}{22}{section*.42}%
+\contentsline {paragraph}{Step 2: Fused Retrieval}{22}{section*.43}%
+\contentsline {paragraph}{Step 3: LLM-Based Deduplication}{23}{section*.44}%
+\contentsline {paragraph}{Step 4: Canonicalization}{24}{section*.45}%
+\contentsline {paragraph}{Step 5: Iteration}{24}{section*.46}%
+\contentsline {subsubsection}{\numberline {3.4.3}Canonical Entity Examples}{25}{subsubsection.3.4.3}%
+\contentsline {subsubsection}{\numberline {3.4.4}Edge Resolution}{25}{subsubsection.3.4.4}%
+\contentsline {subsubsection}{\numberline {3.4.5}Resolution Output}{26}{subsubsection.3.4.5}%
+\contentsline {subsubsection}{\numberline {3.4.6}Quality Metrics}{26}{subsubsection.3.4.6}%
+\contentsline {subsubsection}{\numberline {3.4.7}Performance Targets}{26}{subsubsection.3.4.7}%
+\contentsline {subsection}{\numberline {3.5}Knowledge Graph Storage}{26}{subsection.3.5}%
+\contentsline {subsubsection}{\numberline {3.5.1}Database Selection}{26}{subsubsection.3.5.1}%
+\contentsline {subsubsection}{\numberline {3.5.2}Schema Implementation}{27}{subsubsection.3.5.2}%
+\contentsline {paragraph}{Node Labels:}{27}{section*.51}%
+\contentsline {paragraph}{Relationship Types:}{27}{section*.52}%
+\contentsline {paragraph}{Properties:}{27}{section*.53}%
+\contentsline {subsubsection}{\numberline {3.5.3}Indexing Strategy}{28}{subsubsection.3.5.3}%
+\contentsline {subsection}{\numberline {3.6}LLM Integration Layer}{28}{subsection.3.6}%
+\contentsline {subsubsection}{\numberline {3.6.1}Purpose}{28}{subsubsection.3.6.1}%
+\contentsline {subsubsection}{\numberline {3.6.2}Query Processing Pipeline}{28}{subsubsection.3.6.2}%
+\contentsline {paragraph}{Step 1: Query Embedding}{28}{section*.55}%
+\contentsline {paragraph}{Step 2: Hybrid Retrieval}{28}{section*.56}%
+\contentsline {paragraph}{Step 3: Subgraph Expansion}{29}{section*.57}%
+\contentsline {paragraph}{Step 4: Context Enrichment}{29}{section*.58}%
+\contentsline {paragraph}{Step 5: Context Formatting}{29}{section*.59}%
+\contentsline {paragraph}{Step 6: LLM Generation}{30}{section*.60}%
+\contentsline {subsubsection}{\numberline {3.6.3}API Endpoints}{31}{subsubsection.3.6.3}%
+\contentsline {section}{\numberline {4}Ontology Specifications}{32}{section.4}%
+\contentsline {subsection}{\numberline {4.1}Overview}{32}{subsection.4.1}%
+\contentsline {subsection}{\numberline {4.2}Entity Types (Nodes)}{32}{subsection.4.2}%
+\contentsline {subsubsection}{\numberline {4.2.1}1. Party}{32}{subsubsection.4.2.1}%
+\contentsline {paragraph}{Definition:}{32}{section*.63}%
+\contentsline {paragraph}{Attributes:}{32}{section*.64}%
+\contentsline {paragraph}{Examples:}{33}{section*.65}%
+\contentsline {subsubsection}{\numberline {4.2.2}2. IPAsset}{33}{subsubsection.4.2.2}%
+\contentsline {paragraph}{Definition:}{33}{section*.66}%
+\contentsline {paragraph}{Subtypes:}{33}{section*.67}%
+\contentsline {paragraph}{Attributes:}{33}{section*.68}%
+\contentsline {paragraph}{Examples:}{33}{section*.69}%
+\contentsline {subsubsection}{\numberline {4.2.3}3. Obligation}{33}{subsubsection.4.2.3}%
+\contentsline {paragraph}{Definition:}{33}{section*.70}%
+\contentsline {paragraph}{Attributes:}{33}{section*.71}%
+\contentsline {paragraph}{Examples:}{34}{section*.72}%
+\contentsline {subsubsection}{\numberline {4.2.4}4. Restriction}{34}{subsubsection.4.2.4}%
+\contentsline {paragraph}{Definition:}{34}{section*.73}%
+\contentsline {paragraph}{Subtypes:}{34}{section*.74}%
+\contentsline {paragraph}{Attributes:}{34}{section*.75}%
+\contentsline {paragraph}{Examples:}{34}{section*.76}%
+\contentsline {subsubsection}{\numberline {4.2.5}5. LiabilityProvision}{34}{subsubsection.4.2.5}%
+\contentsline {paragraph}{Definition:}{34}{section*.77}%
+\contentsline {paragraph}{Subtypes:}{34}{section*.78}%
+\contentsline {paragraph}{Attributes:}{35}{section*.79}%
+\contentsline {paragraph}{Examples:}{35}{section*.80}%
+\contentsline {subsubsection}{\numberline {4.2.6}6. Temporal}{35}{subsubsection.4.2.6}%
+\contentsline {paragraph}{Definition:}{35}{section*.81}%
+\contentsline {paragraph}{Attributes:}{35}{section*.82}%
+\contentsline {paragraph}{Examples:}{35}{section*.83}%
+\contentsline {subsubsection}{\numberline {4.2.7}7. Jurisdiction}{35}{subsubsection.4.2.7}%
+\contentsline {paragraph}{Definition:}{35}{section*.84}%
+\contentsline {paragraph}{Attributes:}{35}{section*.85}%
+\contentsline {paragraph}{Examples:}{36}{section*.86}%
+\contentsline {subsubsection}{\numberline {4.2.8}8. ContractClause}{36}{subsubsection.4.2.8}%
+\contentsline {paragraph}{Definition:}{36}{section*.87}%
+\contentsline {paragraph}{Attributes:}{36}{section*.88}%
+\contentsline {paragraph}{Examples:}{36}{section*.89}%
+\contentsline {subsection}{\numberline {4.3}Relationship Types (Edges)}{36}{subsection.4.3}%
+\contentsline {subsubsection}{\numberline {4.3.1}1. LICENSES\_TO}{36}{subsubsection.4.3.1}%
+\contentsline {paragraph}{Definition:}{36}{section*.90}%
+\contentsline {paragraph}{Domain:}{36}{section*.91}%
+\contentsline {paragraph}{Properties:}{36}{section*.92}%
+\contentsline {paragraph}{Example:}{36}{section*.93}%
+\contentsline {subsubsection}{\numberline {4.3.2}2. OWNS}{36}{subsubsection.4.3.2}%
+\contentsline {paragraph}{Definition:}{36}{section*.94}%
+\contentsline {paragraph}{Domain:}{37}{section*.95}%
+\contentsline {paragraph}{Properties:}{37}{section*.96}%
+\contentsline {paragraph}{Example:}{37}{section*.97}%
+\contentsline {subsubsection}{\numberline {4.3.3}3. ASSIGNS}{37}{subsubsection.4.3.3}%
+\contentsline {paragraph}{Definition:}{37}{section*.98}%
+\contentsline {paragraph}{Domain:}{37}{section*.99}%
+\contentsline {paragraph}{Properties:}{37}{section*.100}%
+\contentsline {paragraph}{Example:}{37}{section*.101}%
+\contentsline {subsubsection}{\numberline {4.3.4}4. HAS\_OBLIGATION}{37}{subsubsection.4.3.4}%
+\contentsline {paragraph}{Definition:}{37}{section*.102}%
+\contentsline {paragraph}{Domain:}{37}{section*.103}%
+\contentsline {paragraph}{Properties:}{37}{section*.104}%
+\contentsline {paragraph}{Example:}{37}{section*.105}%
+\contentsline {subsubsection}{\numberline {4.3.5}5. SUBJECT\_TO\_RESTRICTION}{37}{subsubsection.4.3.5}%
+\contentsline {paragraph}{Definition:}{37}{section*.106}%
+\contentsline {paragraph}{Domain:}{37}{section*.107}%
+\contentsline {paragraph}{Properties:}{38}{section*.108}%
+\contentsline {paragraph}{Example:}{38}{section*.109}%
+\contentsline {subsubsection}{\numberline {4.3.6}6. HAS\_LIABILITY}{38}{subsubsection.4.3.6}%
+\contentsline {paragraph}{Definition:}{38}{section*.110}%
+\contentsline {paragraph}{Domain:}{38}{section*.111}%
+\contentsline {paragraph}{Properties:}{38}{section*.112}%
+\contentsline {paragraph}{Example:}{38}{section*.113}%
+\contentsline {subsubsection}{\numberline {4.3.7}7. GOVERNED\_BY}{38}{subsubsection.4.3.7}%
+\contentsline {paragraph}{Definition:}{38}{section*.114}%
+\contentsline {paragraph}{Domain:}{38}{section*.115}%
+\contentsline {paragraph}{Properties:}{38}{section*.116}%
+\contentsline {paragraph}{Example:}{38}{section*.117}%
+\contentsline {subsubsection}{\numberline {4.3.8}8. EFFECTIVE\_ON}{38}{subsubsection.4.3.8}%
+\contentsline {paragraph}{Definition:}{38}{section*.118}%
+\contentsline {paragraph}{Domain:}{38}{section*.119}%
+\contentsline {paragraph}{Properties:}{39}{section*.120}%
+\contentsline {paragraph}{Example:}{39}{section*.121}%
+\contentsline {subsubsection}{\numberline {4.3.9}9. TERMINATES\_ON}{39}{subsubsection.4.3.9}%
+\contentsline {paragraph}{Definition:}{39}{section*.122}%
+\contentsline {paragraph}{Domain:}{39}{section*.123}%
+\contentsline {paragraph}{Properties:}{39}{section*.124}%
+\contentsline {paragraph}{Example:}{39}{section*.125}%
+\contentsline {subsubsection}{\numberline {4.3.10}10. CONTAINS\_CLAUSE}{39}{subsubsection.4.3.10}%
+\contentsline {paragraph}{Definition:}{39}{section*.126}%
+\contentsline {paragraph}{Domain:}{39}{section*.127}%
+\contentsline {paragraph}{Properties:}{39}{section*.128}%
+\contentsline {paragraph}{Example:}{39}{section*.129}%
+\contentsline {subsection}{\numberline {4.4}Common Law Alignment}{39}{subsection.4.4}%
+\contentsline {subsubsection}{\numberline {4.4.1}Key Principles Embedded in Ontology}{39}{subsubsection.4.4.1}%
+\contentsline {subsubsection}{\numberline {4.4.2}Jurisdictional Tagging}{40}{subsubsection.4.4.2}%
+\contentsline {section}{\numberline {5}Technical Implementation Plan}{41}{section.5}%
+\contentsline {subsection}{\numberline {5.1}Development Roadmap}{41}{subsection.5.1}%
+\contentsline {subsection}{\numberline {5.2}Phase 1: Prototype (4--6 weeks)}{41}{subsection.5.2}%
+\contentsline {subsubsection}{\numberline {5.2.1}Goals}{41}{subsubsection.5.2.1}%
+\contentsline {subsubsection}{\numberline {5.2.2}Week-by-Week Plan}{41}{subsubsection.5.2.2}%
+\contentsline {paragraph}{Week 1: Environment Setup and Data Exploration}{41}{section*.130}%
+\contentsline {paragraph}{Week 2: Stage 1 Extraction Implementation}{41}{section*.131}%
+\contentsline {paragraph}{Week 3: Stage 2 \& 3 Implementation}{41}{section*.132}%
+\contentsline {paragraph}{Week 4: Query Interface Development}{42}{section*.133}%
+\contentsline {paragraph}{Week 5: Evaluation and Quality Assessment}{42}{section*.134}%
+\contentsline {paragraph}{Week 6: Iteration and Refinement}{42}{section*.135}%
+\contentsline {subsubsection}{\numberline {5.2.3}Phase 1 Deliverables}{42}{subsubsection.5.2.3}%
+\contentsline {subsubsection}{\numberline {5.2.4}Success Criteria}{42}{subsubsection.5.2.4}%
+\contentsline {subsection}{\numberline {5.3}Phase 2: Scale and Optimize (6--8 weeks)}{43}{subsection.5.3}%
+\contentsline {subsubsection}{\numberline {5.3.1}Goals}{43}{subsubsection.5.3.1}%
+\contentsline {subsubsection}{\numberline {5.3.2}Milestones}{43}{subsubsection.5.3.2}%
+\contentsline {paragraph}{Weeks 1--2: Full Dataset Processing}{43}{section*.136}%
+\contentsline {paragraph}{Weeks 3--4: Resolution Optimization}{43}{section*.137}%
+\contentsline {paragraph}{Week 5: Advanced Query Features}{43}{section*.138}%
+\contentsline {paragraph}{Week 6: REST API Development}{43}{section*.139}%
+\contentsline {paragraph}{Week 7: Comprehensive Evaluation}{44}{section*.140}%
+\contentsline {paragraph}{Week 8: Bug Fixes and Performance Tuning}{44}{section*.141}%
+\contentsline {subsubsection}{\numberline {5.3.3}Phase 2 Deliverables}{44}{subsubsection.5.3.3}%
+\contentsline {subsubsection}{\numberline {5.3.4}Success Criteria}{44}{subsubsection.5.3.4}%
+\contentsline {subsection}{\numberline {5.4}Phase 3: Product Integration (4--6 weeks)}{44}{subsection.5.4}%
+\contentsline {subsubsection}{\numberline {5.4.1}Goals}{44}{subsubsection.5.4.1}%
+\contentsline {subsubsection}{\numberline {5.4.2}Milestones}{45}{subsubsection.5.4.2}%
+\contentsline {paragraph}{Week 1: User Interface Design}{45}{section*.142}%
+\contentsline {paragraph}{Week 2: Contract Q\&A Feature}{45}{section*.143}%
+\contentsline {paragraph}{Week 3: Risk Analysis Dashboard}{45}{section*.144}%
+\contentsline {paragraph}{Week 4: Comparison and Compliance Features}{45}{section*.145}%
+\contentsline {paragraph}{Week 5: User Testing}{45}{section*.146}%
+\contentsline {paragraph}{Week 6: Production Deployment}{45}{section*.147}%
+\contentsline {subsubsection}{\numberline {5.4.3}Phase 3 Deliverables}{46}{subsubsection.5.4.3}%
+\contentsline {subsubsection}{\numberline {5.4.4}Success Criteria}{46}{subsubsection.5.4.4}%
+\contentsline {subsection}{\numberline {5.5}Phase 4: Enhancement and Expansion (Ongoing)}{46}{subsection.5.5}%
+\contentsline {subsubsection}{\numberline {5.5.1}Areas for Continuous Improvement}{46}{subsubsection.5.5.1}%
+\contentsline {subsection}{\numberline {5.6}Technology Stack}{47}{subsection.5.6}%
+\contentsline {subsection}{\numberline {5.7}Infrastructure Requirements}{48}{subsection.5.7}%
+\contentsline {subsubsection}{\numberline {5.7.1}Compute}{48}{subsubsection.5.7.1}%
+\contentsline {subsubsection}{\numberline {5.7.2}Storage}{48}{subsubsection.5.7.2}%
+\contentsline {subsubsection}{\numberline {5.7.3}Deployment Options}{48}{subsubsection.5.7.3}%
+\contentsline {section}{\numberline {6}Success Metrics \& Risk Analysis}{49}{section.6}%
+\contentsline {subsection}{\numberline {6.1}Success Metrics}{49}{subsection.6.1}%
+\contentsline {subsubsection}{\numberline {6.1.1}Technical Metrics}{49}{subsubsection.6.1.1}%
+\contentsline {subsubsection}{\numberline {6.1.2}Business Metrics}{50}{subsubsection.6.1.2}%
+\contentsline {subsubsection}{\numberline {6.1.3}Legal Metrics}{50}{subsubsection.6.1.3}%
+\contentsline {subsection}{\numberline {6.2}Risk Analysis and Mitigation}{51}{subsection.6.2}%
+\contentsline {subsubsection}{\numberline {6.2.1}Technical Risks}{51}{subsubsection.6.2.1}%
+\contentsline {subsubsection}{\numberline {6.2.2}Legal Risks}{52}{subsubsection.6.2.2}%
+\contentsline {subsubsection}{\numberline {6.2.3}Business Risks}{52}{subsubsection.6.2.3}%
+\contentsline {subsection}{\numberline {6.3}Quality Assurance Process}{53}{subsection.6.3}%
+\contentsline {subsubsection}{\numberline {6.3.1}Testing Strategy}{53}{subsubsection.6.3.1}%
+\contentsline {subsubsection}{\numberline {6.3.2}Continuous Monitoring}{53}{subsubsection.6.3.2}%
+\contentsline {subsection}{\numberline {6.4}Ethical Considerations}{53}{subsection.6.4}%
+\contentsline {subsubsection}{\numberline {6.4.1}Transparency}{53}{subsubsection.6.4.1}%
+\contentsline {subsubsection}{\numberline {6.4.2}Bias and Fairness}{54}{subsubsection.6.4.2}%
+\contentsline {subsubsection}{\numberline {6.4.3}Data Privacy}{54}{subsubsection.6.4.3}%
+\contentsline {subsubsection}{\numberline {6.4.4}Professional Responsibility}{54}{subsubsection.6.4.4}%
+\contentsline {section}{\numberline {7}Conclusion}{55}{section.7}%
+\contentsline {subsection}{\numberline {7.1}Summary}{55}{subsection.7.1}%
+\contentsline {subsection}{\numberline {7.2}Value Proposition}{55}{subsection.7.2}%
+\contentsline {subsection}{\numberline {7.3}Path to Production}{55}{subsection.7.3}%
+\contentsline {subsection}{\numberline {7.4}Competitive Advantages}{56}{subsection.7.4}%
+\contentsline {subsection}{\numberline {7.5}Next Steps}{56}{subsection.7.5}%
+\contentsline {paragraph}{Immediate Actions:}{56}{section*.155}%
+\contentsline {paragraph}{Success Criteria for Approval:}{56}{section*.156}%
+\contentsline {subsection}{\numberline {7.6}Contact Information}{56}{subsection.7.6}%
+\contentsline {section}{\numberline {A}CUAD Label Categories}{57}{appendix.A}%
+\contentsline {section}{\numberline {B}Common Law Contract Interpretation Principles}{57}{appendix.B}%
+\contentsline {subsection}{\numberline {B.1}Key Principles Guiding Ontology Design}{57}{subsection.B.1}%
+\contentsline {section}{\numberline {C}Example Queries and Expected Outputs}{58}{appendix.C}%
+\contentsline {subsection}{\numberline {C.1}Query 1: IP Rights Inquiry}{58}{subsection.C.1}%
+\contentsline {paragraph}{Question:}{58}{section*.157}%
+\contentsline {paragraph}{Relevant Triples:}{58}{section*.158}%
+\contentsline {paragraph}{Answer:}{58}{section*.159}%
+\contentsline {subsection}{\numberline {C.2}Query 2: Non-Compete Restriction}{58}{subsection.C.2}%
+\contentsline {paragraph}{Question:}{58}{section*.160}%
+\contentsline {paragraph}{Relevant Triples:}{59}{section*.161}%
+\contentsline {paragraph}{Answer:}{59}{section*.162}%
+\contentsline {subsection}{\numberline {C.3}Query 3: Liability Cap}{59}{subsection.C.3}%
+\contentsline {paragraph}{Question:}{59}{section*.163}%
+\contentsline {paragraph}{Relevant Triples:}{59}{section*.164}%
+\contentsline {paragraph}{Answer:}{59}{section*.165}%
+\contentsline {section}{\numberline {D}Technology Stack Details}{59}{appendix.D}%
+\contentsline {subsection}{\numberline {D.1}LLM Providers}{59}{subsection.D.1}%
+\contentsline {subsection}{\numberline {D.2}Python Libraries}{59}{subsection.D.2}%
+\contentsline {paragraph}{Core Dependencies:}{59}{section*.167}%

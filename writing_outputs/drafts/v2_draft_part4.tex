@@ -1,0 +1,132 @@
+\section{Technical Architecture}
+
+\subsection{KGGEN Pipeline for Legal Contracts}
+
+\begin{figure}[H]
+\centering
+\includegraphics[width=\textwidth]{../figures/graphical_abstract.png}
+\caption{Graphical abstract showing the end-to-end KGGEN-CUAD knowledge graph system architecture from contract documents through extraction pipeline to LLM-assisted analysis.}
+\label{fig:graphical_abstract}
+\end{figure}
+
+The system applies the three-stage KGGEN pipeline~\cite{mo2025kggen} to legal contract documents, with domain-specific adaptations for the legal domain. Figure~\ref{fig:graphical_abstract} illustrates the complete workflow from raw contract documents to LLM-powered analysis.
+
+\subsubsection{Stage 1: Entity and Relation Extraction}
+
+\begin{figure}[H]
+\centering
+\includegraphics[width=0.95\textwidth]{../figures/kggen_pipeline_legal.png}
+\caption{KGGEN pipeline architecture adapted for legal contract processing, showing three stages: entity and relation extraction, aggregation, and entity resolution.}
+\label{fig:kggen_pipeline}
+\end{figure}
+
+The first stage extracts subject-predicate-object triples from contract text using language models with structured output via DSPy signatures.
+
+\textbf{Input Processing:}
+\begin{itemize}
+    \item \textbf{Document Parsing:} Convert PDF/DOCX to plain text, preserving structure
+    \item \textbf{Segmentation:} Split contracts into logical sections (definitions, obligations, termination, etc.)
+    \item \textbf{Chunk Size:} Process in 1000-token chunks with 200-token overlap to maintain context
+\end{itemize}
+
+\textbf{Entity Extraction:} The first DSPy signature extracts entities from source text with the prompt:
+
+\begin{quote}
+\textit{``Extract key entities from the source text. Extracted entities are subjects or objects. This is for an extraction task, please be thorough and accurate to the reference text.''}
+\end{quote}
+
+For legal contracts, entities include: parties (companies, individuals), clauses (obligations, rights, restrictions), dates, terms (license grants, warranties), and legal concepts (governing law, jurisdiction).
+
+\textbf{Relation Extraction:} The second DSPy signature extracts relationships with the prompt:
+
+\begin{quote}
+\textit{``Extract subject-predicate-object triples from the source text. Subject and object must be from entities list. Entities provided were previously extracted from the same source text. This is for an extraction task, please be thorough, accurate, and faithful to the reference text.''}
+\end{quote}
+
+\textbf{LLM Configuration:}
+\begin{itemize}
+    \item \textbf{Model:} Google Gemini 2.0 Flash (chosen for speed and cost-effectiveness)
+    \item \textbf{Temperature:} 0.0 (deterministic extraction)
+    \item \textbf{Max Tokens:} 4000 (sufficient for entity lists and triples)
+    \item \textbf{DSPy Optimization:} Use DSPy to automatically optimize prompts based on CUAD training examples
+\end{itemize}
+
+\textbf{Example Extraction:}
+
+\textit{Source text:} ``This Agreement shall be governed by the laws of the State of California without giving effect to conflict or choice of law principles. The Company grants to the Licensee a worldwide, non-exclusive, perpetual license to use the Software.''
+
+\textit{Extracted entities:} [``Agreement'', ``laws of the State of California'', ``Company'', ``Licensee'', ``worldwide, non-exclusive, perpetual license'', ``Software'']
+
+\textit{Extracted triples:}
+\begin{itemize}
+    \item (Agreement, governed\_by, laws of the State of California)
+    \item (Company, grants, worldwide, non-exclusive, perpetual license)
+    \item (worldwide, non-exclusive, perpetual license, permits\_use\_of, Software)
+    \item (Licensee, receives, worldwide, non-exclusive, perpetual license)
+\end{itemize}
+
+\subsubsection{Stage 2: Aggregation}
+
+After extracting triples from each contract section, the aggregation stage combines graphs across all source texts:
+
+\textbf{Collection:} Collect all unique entities and edges across all contract sections and combine into a single graph representation.
+
+\textbf{Normalization:} Normalize all entities and edges to lowercase to reduce trivial duplicates (e.g., ``Company'' and ``company'' become the same node).
+
+\textbf{Deduplication:} Remove exact duplicate triples that appear in multiple contract sections.
+
+\textbf{Cross-Contract Integration:} For multi-contract knowledge graphs, merge entities that clearly refer to the same real-world entity based on string matching (e.g., ``Acme Corp'' and ``Acme Corporation'').
+
+The aggregation stage does not require LLM processing, making it computationally efficient. For a 100-page contract, aggregation typically reduces the number of unique entities by 10-15\% through normalization alone.
+
+\subsubsection{Stage 3: Entity and Edge Resolution}
+
+The entity resolution stage is KGGen's key innovation, addressing the sparsity problem where extractors create nearly as many unique relation types as edges~\cite{mo2025kggen}. This stage employs a hybrid clustering and LLM-based deduplication approach.
+
+\textbf{Clustering Phase:}
+\begin{enumerate}
+    \item \textbf{Embedding:} Generate semantic embeddings for all entities/edges using S-BERT (all-MiniLM-L6-v2 model)
+    \item \textbf{K-means Clustering:} Cluster items into groups of 128 semantically similar items
+    \item \textbf{Purpose:} Reduce LLM processing by only comparing items likely to be duplicates
+\end{enumerate}
+
+\textbf{Deduplication Phase (within each cluster):}
+\begin{enumerate}
+    \item \textbf{Retrieval:} For each item, retrieve top-16 most similar items using:
+    \begin{itemize}
+        \item BM25 keyword matching score
+        \item Semantic cosine similarity score
+        \item Fused score = 0.5 * BM25 + 0.5 * cosine\_similarity
+    \end{itemize}
+    \item \textbf{LLM Duplicate Detection:} Prompt LLM with:
+    \begin{quote}
+    \textit{``Find duplicate [entity/edge] for the item and an alias that best represents the duplicates. Duplicates are those that are the same in meaning, such as with variation in tense, plural form, stem form, case, abbreviation, shorthand. Return an empty list if there are none.''}
+    \end{quote}
+    \item \textbf{Canonical Selection:} LLM selects the most representative canonical form (similar to Wikidata aliases)
+    \item \textbf{Mapping:} Create cluster maps tracking which entities belong to which canonical alias
+    \item \textbf{Iteration:} Remove resolved items from cluster and repeat until cluster is empty
+\end{enumerate}
+
+\textbf{Legal Domain Examples:}
+
+\textit{Entity resolution:}
+\begin{itemize}
+    \item ``Licensee'', ``the Licensee'', ``licensee'' $\rightarrow$ canonical: ``Licensee''
+    \item ``IP'', ``intellectual property'', ``Intellectual Property Rights'' $\rightarrow$ canonical: ``Intellectual Property''
+    \item ``California Law'', ``laws of California'', ``California state law'' $\rightarrow$ canonical: ``California Law''
+\end{itemize}
+
+\textit{Edge resolution:}
+\begin{itemize}
+    \item ``governed by'', ``governed under'', ``subject to laws of'' $\rightarrow$ canonical: ``governed\_by''
+    \item ``grants license'', ``provides license to'', ``licenses'' $\rightarrow$ canonical: ``grants\_license''
+    \item ``terminates upon'', ``ends when'', ``expires on'' $\rightarrow$ canonical: ``terminates\_on''
+\end{itemize}
+
+\textbf{Performance:} For a 1M character corpus, entity resolution achieves:
+\begin{itemize}
+    \item 22.4\% entity deduplication ratio
+    \item 23.0\% edge deduplication ratio
+    \item Processing time: 279 seconds (versus 273 seconds for extraction)~\cite{mo2025kggen}
+\end{itemize}
+

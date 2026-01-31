@@ -1,0 +1,55 @@
+\begin{thebibliography}{1}
+
+\bibitem{angeli2015openie}
+Gabor Angeli, Melvin Jose~Johnson Premkumar, and Christopher~D Manning.
+\newblock Leveraging linguistic structure for open domain information
+  extraction.
+\newblock In {\em Proceedings of the 53rd Annual Meeting of the Association for
+  Computational Linguistics and the 7th International Joint Conference on
+  Natural Language Processing (Volume 1: Long Papers)}, pages 344--354.
+  Association for Computational Linguistics, 2015.
+
+\bibitem{ceb2017contract}
+{CEB}.
+\newblock Advance your contract management process.
+\newblock
+  \url{https://web.archive.org/web/20170920135124/https://www.cebglobal.com/compliance-legal/smb-legal/contract-management-midsized.html},
+  2017.
+
+\bibitem{devlin2019bert}
+Jacob Devlin, Ming-Wei Chang, Kenton Lee, and Kristina Toutanova.
+\newblock Bert: Pre-training of deep bidirectional transformers for language
+  understanding.
+\newblock {\em arXiv preprint arXiv:1810.04805}, 2019.
+
+\bibitem{he2020deberta}
+Pengcheng He, Xiaodong Liu, Jianfeng Gao, and Weizhu Chen.
+\newblock Deberta: Decoding-enhanced bert with disentangled attention.
+\newblock In {\em International Conference on Learning Representations}, 2021.
+
+\bibitem{hendrycks2021cuad}
+Dan Hendrycks, Collin Burns, Anya Chen, and Spencer Ball.
+\newblock Cuad: An expert-annotated nlp dataset for legal contract review.
+\newblock In {\em 35th Conference on Neural Information Processing Systems
+  (NeurIPS 2021) Track on Datasets and Benchmarks}. NeurIPS, 2021.
+
+\bibitem{larson2024graphrag}
+Jonathan Larson and Steven Truitt.
+\newblock Graphrag: Unlocking llm discovery on narrative private data.
+\newblock {\em Microsoft Research Blog}, 2024.
+
+\bibitem{liu2019roberta}
+Yinhan Liu, Myle Ott, Naman Goyal, Jingfei Du, Mandar Joshi, Danqi Chen, Omer
+  Levy, Mike Lewis, Luke Zettlemoyer, and Veselin Stoyanov.
+\newblock Roberta: A robustly optimized bert pretraining approach.
+\newblock {\em arXiv preprint arXiv:1907.11692}, 2019.
+
+\bibitem{mo2025kggen}
+Belinda Mo, Kyssen Yu, Joshua Kazdan, Joan Cabezas, Proud Mpala, Lisa Yu, Chris
+  Cundy, Charilaos Kanatsoulis, and Sanmi Koyejo.
+\newblock Kggen: Extracting knowledge graphs from plain text with language
+  models.
+\newblock In {\em 39th Conference on Neural Information Processing Systems
+  (NeurIPS 2025)}. NeurIPS, 2025.
+
+\end{thebibliography}

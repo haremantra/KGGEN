@@ -1,0 +1,21 @@
+{
+  "user_prompt": "Technology agreement contract analysis workflow: End-to-end user workflow showing lawyer at computer uploading technology contract PDF document, system performs KGGEN extraction pipeline identifying key clauses (license grants shown as blue highlight, IP ownership shown as green highlight, non-compete shown as orange highlight, liability caps shown as red highlight, termination rights shown as purple highlight), builds knowledge graph network in background, lawyer enters semantic search queries in query panel ('What are the exclusivity terms?', 'Who owns created IP?', 'What are termination conditions?'), system returns highlighted contract sections with graph-based context and summaries. Show split-screen user interface mockup with contract viewer on left showing highlighted sections and query/results panel on right.",
+  "doc_type": "report",
+  "quality_threshold": 7.5,
+  "iterations": [
+    {
+      "iteration": 1,
+      "image_path": "writing_outputs/figures/tech_agreement_workflow_v1.png",
+      "prompt": "\nCreate a high-quality scientific diagram with these requirements:\n\nVISUAL QUALITY:\n- Clean white or light background (no textures or gradients)\n- High contrast for readability and printing\n- Professional, publication-ready appearance\n- Sharp, clear lines and text\n- Adequate spacing between elements to prevent crowding\n\nTYPOGRAPHY:\n- Clear, readable sans-serif fonts (Arial, Helvetica style)\n- Minimum 10pt font size for all labels\n- Consistent font sizes throughout\n- All text horizontal or clearly readable\n- No overlapping text\n\nSCIENTIFIC STANDARDS:\n- Accurate representation of concepts\n- Clear labels for all components\n- Include scale bars, legends, or axes where appropriate\n- Use standard scientific notation and symbols\n- Include units where applicable\n\nACCESSIBILITY:\n- Colorblind-friendly color palette (use Okabe-Ito colors if using color)\n- High contrast between elements\n- Redundant encoding (shapes + colors, not just colors)\n- Works well in grayscale\n\nLAYOUT:\n- Logical flow (left-to-right or top-to-bottom)\n- Clear visual hierarchy\n- Balanced composition\n- Appropriate use of whitespace\n- No clutter or unnecessary decorative elements\n\n\nUSER REQUEST: Technology agreement contract analysis workflow: End-to-end user workflow showing lawyer at computer uploading technology contract PDF document, system performs KGGEN extraction pipeline identifying key clauses (license grants shown as blue highlight, IP ownership shown as green highlight, non-compete shown as orange highlight, liability caps shown as red highlight, termination rights shown as purple highlight), builds knowledge graph network in background, lawyer enters semantic search queries in query panel ('What are the exclusivity terms?', 'Who owns created IP?', 'What are termination conditions?'), system returns highlighted contract sections with graph-based context and summaries. Show split-screen user interface mockup with contract viewer on left showing highlighted sections and query/results panel on right.\n\nGenerate a publication-quality scientific diagram that meets all the guidelines above.",
+      "critique": "Image generated successfully (review skipped)",
+      "score": 7.5,
+      "needs_improvement": false,
+      "success": true
+    }
+  ],
+  "final_image": "writing_outputs/figures/tech_agreement_workflow_v1.png",
+  "final_score": 7.5,
+  "success": true,
+  "early_stop": true,
+  "early_stop_reason": "Quality score 7.5 meets threshold 7.5 for report"
+}

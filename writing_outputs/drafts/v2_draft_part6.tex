@@ -1,0 +1,149 @@
+\section{Ontology Definition: CUAD Label Mapping}
+
+\subsection{CUAD Ontology Overview}
+
+\begin{figure}[H]
+\centering
+\includegraphics[width=0.95\textwidth]{../figures/cuad_ontology_hierarchy.png}
+\caption{CUAD ontology hierarchy organized by three main categories covering 41 label types for legal contract analysis.}
+\label{fig:cuad_ontology}
+\end{figure}
+
+The CUAD dataset organizes contract clauses into 41 label categories across three high-level groups~\cite{hendrycks2021cuad}. Figure~\ref{fig:cuad_ontology} shows the hierarchical organization of these categories. Our knowledge graph ontology maps each CUAD label to specific node and relationship types.
+
+\subsection{Category 1: General Information (11 Labels)}
+
+General information labels capture basic contract metadata and terms.
+
+\begin{table}[H]
+\centering
+\caption{General Information CUAD labels and KG mapping}
+\small
+\begin{tabular}{p{3.5cm}p{5.5cm}p{4.5cm}}
+\toprule
+\textbf{CUAD Label} & \textbf{Description} & \textbf{KG Mapping} \\
+\midrule
+Document Name & Name of the contract & Contract node property \\
+Parties & Two or more parties who signed & Party nodes with HAS\_PARTY relationship \\
+Agreement Date & Date contract was signed & Date node with SIGNED\_ON relationship \\
+Effective Date & When contract becomes effective & Date node with EFFECTIVE\_ON relationship \\
+Expiration Date & When initial term expires & Date node with EXPIRES\_ON relationship \\
+Renewal Term & Renewal period after initial term & Clause node with SPECIFIES\_RENEWAL relationship \\
+Notice to Terminate Renewal & Notice period for termination & Clause node with REQUIRES\_NOTICE relationship \\
+Governing Law & State/country law that governs & Law node with GOVERNED\_BY relationship \\
+License Grant & License granted by one party & License node with GRANTS\_LICENSE relationship \\
+Most Favored Nation & Third party better terms clause & Clause node with MFN\_PROVISION relationship \\
+\bottomrule
+\end{tabular}
+\end{table}
+
+\textbf{Technology Agreement Focus:} For technology contracts, License Grant is particularly important, covering:
+\begin{itemize}
+    \item Software license scope (perpetual, term-limited, subscription)
+    \item Geographic restrictions (worldwide, specific territories)
+    \item Exclusivity (exclusive, non-exclusive)
+    \item Transferability (transferable, non-transferable)
+    \item Sublicensing rights (with/without right to sublicense)
+    \item Usage restrictions (development, production, internal use)
+\end{itemize}
+
+\subsection{Category 2: Restrictive Covenants (15 Labels)}
+
+Restrictive covenants limit the buyer's or company's ability to operate.
+
+\begin{table}[H]
+\centering
+\caption{Restrictive Covenants CUAD labels and KG mapping}
+\small
+\begin{tabular}{p{3.5cm}p{5.5cm}p{4.5cm}}
+\toprule
+\textbf{CUAD Label} & \textbf{Description} & \textbf{KG Mapping} \\
+\midrule
+Non-Compete & Restriction on competing & Obligation node with PROHIBITS\_COMPETITION relationship \\
+Exclusivity & Exclusive dealing commitment & Clause node with REQUIRES\_EXCLUSIVITY relationship \\
+Anti-Assignment & Consent required for assignment & Restriction node with RESTRICTS\_ASSIGNMENT relationship \\
+No-Solicit of Customers & Cannot solicit counterparty customers & Obligation node with PROHIBITS\_CUSTOMER\_SOLICITATION relationship \\
+No-Solicit of Employees & Cannot solicit counterparty employees & Obligation node with PROHIBITS\_EMPLOYEE\_SOLICITATION relationship \\
+Non-Disparagement & Requirement not to disparage & Obligation node with PROHIBITS\_DISPARAGEMENT relationship \\
+IP Ownership Assignment & IP becomes property of counterparty & IP\_Rights node with ASSIGNS\_IP relationship \\
+Joint IP Ownership & Joint/shared IP ownership & IP\_Rights node with SHARES\_IP relationship \\
+Non-Transferable License & License cannot be transferred & License node property \\
+Covenant Not to Sue & Cannot contest counterparty IP & Obligation node with WAIVES\_LEGAL\_CLAIMS relationship \\
+Competitive Restriction Exception & Exceptions to restrictions & Exception node with EXEMPTS\_FROM relationship \\
+\bottomrule
+\end{tabular}
+\end{table}
+
+\textbf{Technology Agreement Focus:} Critical restrictive covenants for technology contracts:
+\begin{itemize}
+    \item \textbf{IP Ownership Assignment:} Determines who owns IP created under the agreement (work-for-hire provisions, background IP vs. foreground IP)
+    \item \textbf{Non-Compete:} May restrict use of competing technologies or development of competing products
+    \item \textbf{Exclusivity:} May require exclusive use of vendor's platform or prohibit multi-vendor strategies
+    \item \textbf{Anti-Assignment:} Restricts transfer of licenses in M\&A transactions or organizational restructuring
+\end{itemize}
+
+\subsection{Category 3: Revenue Risks (15 Labels)}
+
+Revenue risk labels identify terms requiring additional cost or remedial measures.
+
+\begin{table}[H]
+\centering
+\caption{Revenue Risks CUAD labels and KG mapping}
+\small
+\begin{tabular}{p{3.5cm}p{5.5cm}p{4.5cm}}
+\toprule
+\textbf{CUAD Label} & \textbf{Description} & \textbf{KG Mapping} \\
+\midrule
+Minimum Commitment & Minimum order/usage required & Obligation node with REQUIRES\_MINIMUM relationship \\
+Cap on Liability & Maximum liability amount & Clause node with CAPS\_LIABILITY relationship \\
+Uncapped Liability & Unlimited liability for breaches & Clause node with UNCAPS\_LIABILITY relationship \\
+Liquidated Damages & Damages for breach/termination & Clause node with SPECIFIES\_DAMAGES relationship \\
+Audit Rights & Right to audit compliance & Right node with PERMITS\_AUDIT relationship \\
+Revenue/Profit Sharing & Share revenue/profit with counterparty & Obligation node with SHARES\_REVENUE relationship \\
+Price Restriction & Restriction on price changes & Restriction node with RESTRICTS\_PRICING relationship \\
+Volume Restriction & Fee increase if usage exceeds threshold & Clause node with LIMITS\_VOLUME relationship \\
+Warranty Duration & Duration of warranty period & Warranty node with DURATION property \\
+Insurance & Required insurance coverage & Requirement node with REQUIRES\_INSURANCE relationship \\
+Termination for Convenience & Terminate without cause & Right node with PERMITS\_TERMINATION relationship \\
+Notice Period to Terminate & Notice required for termination & Requirement node with REQUIRES\_NOTICE relationship \\
+Post-Termination Services & Obligations after termination & Obligation node with POST\_TERM\_OBLIGATION relationship \\
+Source Code Escrow & Deposit source code with third party & Requirement node with REQUIRES\_ESCROW relationship \\
+Third Party Beneficiary & Non-contracting party beneficiary & Party node with BENEFITS\_FROM relationship \\
+\bottomrule
+\end{tabular}
+\end{table}
+
+\textbf{Technology Agreement Focus:} Key revenue risk terms for technology contracts:
+\begin{itemize}
+    \item \textbf{Minimum Commitment:} May require minimum API calls, storage, or user seats regardless of actual usage
+    \item \textbf{Volume Restriction:} Tiered pricing that increases costs beyond certain thresholds
+    \item \textbf{Source Code Escrow:} Deposits source code with third party for release if vendor fails
+    \item \textbf{Warranty Duration:} Defines how long software must perform as specified
+    \item \textbf{Post-Termination Services:} May require data migration assistance or continued access after termination
+\end{itemize}
+
+\subsection{Technology Agreement Ontology Extensions}
+
+For technology agreements, we extend the base CUAD ontology with additional specific labels:
+
+\begin{table}[H]
+\centering
+\caption{Technology-specific ontology extensions}
+\small
+\begin{tabular}{p{3.5cm}p{5.5cm}p{4.5cm}}
+\toprule
+\textbf{Extension Label} & \textbf{Description} & \textbf{KG Mapping} \\
+\midrule
+SaaS Terms & Service level commitments & SLA node with GUARANTEES\_UPTIME relationship \\
+API Access Rights & API usage terms and rate limits & API\_License node with PERMITS\_API\_ACCESS relationship \\
+Data Ownership & Ownership of customer data & Data\_Rights node with OWNS\_DATA relationship \\
+Data Privacy & GDPR, CCPA compliance requirements & Compliance node with REQUIRES\_COMPLIANCE relationship \\
+Deployment Model & Cloud, on-premise, hybrid & Contract node property \\
+Integration Requirements & Third-party integration terms & Requirement node with PERMITS\_INTEGRATION relationship \\
+Security Standards & SOC 2, ISO 27001 requirements & Compliance node with MEETS\_STANDARD relationship \\
+Customization Rights & Ability to modify software & Right node with PERMITS\_CUSTOMIZATION relationship \\
+Update Obligations & Software update/maintenance terms & Obligation node with PROVIDES\_UPDATES relationship \\
+\bottomrule
+\end{tabular}
+\end{table}
+

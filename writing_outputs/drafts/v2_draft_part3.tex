@@ -1,0 +1,181 @@
+\section{Product Scope and Objectives}
+
+\subsection{Target Users}
+
+\subsubsection{Primary Users: Legal Professionals}
+
+\textbf{In-House Counsel:} Corporate lawyers reviewing technology agreements for software procurement, API licensing, cloud services, and technology partnerships. Need to quickly identify key terms (license scope, liability caps, termination rights, IP ownership) across multiple contracts.
+
+\textbf{Law Firm Associates:} Junior lawyers performing initial contract review and due diligence. Spend significant time on repetitive clause identification tasks. Benefit from automated extraction to focus on higher-value analysis and client counseling.
+
+\textbf{Legal Operations Teams:} Manage contract portfolios, track obligations, and ensure compliance. Need structured data extraction to populate contract management systems and generate reports on contract terms across the organization.
+
+\subsubsection{Secondary Users: Engineering and Product Teams}
+
+\textbf{Software Engineers:} Build and maintain the KGGEN extraction pipeline, knowledge graph infrastructure, and retrieval systems. Require clear technical specifications, API documentation, and performance benchmarks.
+
+\textbf{Machine Learning Engineers:} Train and fine-tune models on CUAD data, optimize entity resolution algorithms, and improve extraction accuracy. Need access to labeled training data and evaluation metrics.
+
+\textbf{Product Managers:} Define features, prioritize development, and measure user adoption. Balance technical feasibility with user needs and business objectives.
+
+\subsubsection{Tertiary Users: Business Stakeholders}
+
+\textbf{Procurement Teams:} Review vendor contracts for compliance with corporate standards. Benefit from automated identification of unfavorable terms and risk factors.
+
+\textbf{Sales and Business Development:} Negotiate customer agreements and partnerships. Use the system to understand common market terms and identify negotiation points.
+
+\subsection{Use Cases}
+
+\subsubsection{UC1: Contract Upload and Automated Extraction}
+
+\textbf{Actor:} Legal professional
+
+\textbf{Precondition:} User has a technology agreement in PDF or DOCX format
+
+\textbf{Flow:}
+\begin{enumerate}
+    \item User uploads contract document through web interface
+    \item System performs OCR if document is scanned image
+    \item KGGEN extraction pipeline processes contract:
+    \begin{itemize}
+        \item Stage 1: Extract entities and relations using Gemini 2.0 Flash
+        \item Stage 2: Aggregate with existing knowledge graph
+        \item Stage 3: Resolve entities and canonicalize relations
+    \end{itemize}
+    \item System populates knowledge graph with extracted triples
+    \item User receives summary of identified clauses organized by CUAD categories
+    \item System highlights confidence scores for each extraction
+\end{enumerate}
+
+\textbf{Postcondition:} Contract is added to knowledge graph and searchable
+
+\textbf{Success Metric:} Processing time <2 minutes, extraction accuracy >85\%
+
+\subsubsection{UC2: Semantic Search for Contract Clauses}
+
+\textbf{Actor:} Legal professional
+
+\textbf{Precondition:} Contracts have been processed and added to knowledge graph
+
+\textbf{Flow:}
+\begin{enumerate}
+    \item User enters natural language query: ``Show me all perpetual licenses granted in our technology contracts''
+    \item System embeds query using all-MiniLM-L6-v2 model
+    \item Hybrid retrieval combines BM25 keyword matching and semantic similarity
+    \item System retrieves top-k relevant triples from knowledge graph
+    \item Multi-hop expansion traverses 2-hop neighborhood for related clauses
+    \item Results display with:
+    \begin{itemize}
+        \item Highlighted contract sections
+        \item Graph visualization showing related entities
+        \item Source attribution with page numbers
+        \item Confidence scores
+    \end{itemize}
+    \item User can refine query or request LLM synthesis
+\end{enumerate}
+
+\textbf{Postcondition:} User has identified relevant clauses across contract portfolio
+
+\textbf{Success Metric:} Query response time <3 seconds, recall >90\%
+
+\subsubsection{UC3: LLM-Assisted Contract Analysis}
+
+\textbf{Actor:} Legal professional
+
+\textbf{Precondition:} Specific contract or clause set has been identified
+
+\textbf{Flow:}
+\begin{enumerate}
+    \item User asks analysis question: ``What are the termination conditions and notice requirements in this agreement?''
+    \item System retrieves relevant knowledge graph context
+    \item System assembles prompt with:
+    \begin{itemize}
+        \item Retrieved triples
+        \item Source text chunks
+        \item User question
+    \end{itemize}
+    \item LLM generates natural language analysis grounded in KG facts
+    \item System presents analysis with citations to specific contract sections
+    \item User can flag errors or request human lawyer review
+\end{enumerate}
+
+\textbf{Postcondition:} User has preliminary analysis to guide detailed legal review
+
+\textbf{Success Metric:} Analysis accuracy >80\%, user satisfaction >4.0/5.0
+
+\subsubsection{UC4: Risk Identification and Compliance Checking}
+
+\textbf{Actor:} Legal operations team
+
+\textbf{Precondition:} Organization has defined risk criteria and compliance standards
+
+\textbf{Flow:}
+\begin{enumerate}
+    \item System scans knowledge graph for high-risk patterns:
+    \begin{itemize}
+        \item Uncapped liability provisions
+        \item Perpetual or auto-renewing terms
+        \item Broad indemnification obligations
+        \item Non-standard governing law
+        \item IP assignment without compensation
+    \end{itemize}
+    \item System generates risk report with:
+    \begin{itemize}
+        \item Contracts containing high-risk clauses
+        \item Severity scoring
+        \item Comparison to organizational standards
+        \item Recommendations for remediation
+    \end{itemize}
+    \item User reviews flagged contracts for follow-up
+\end{enumerate}
+
+\textbf{Postcondition:} High-risk contracts identified for legal review
+
+\textbf{Success Metric:} False positive rate <20\%, critical risk recall >95\%
+
+\subsection{Success Metrics}
+
+\begin{table}[H]
+\centering
+\caption{Key Performance Indicators for KGGEN-CUAD System}
+\begin{tabular}{llp{6cm}}
+\toprule
+\textbf{Category} & \textbf{Metric} & \textbf{Target \& Measurement Method} \\
+\midrule
+\textbf{Extraction} & AUPR & >45\% on CUAD test set (baseline: DeBERTa 47.8\%) \\
+\textbf{Quality} & Precision @ 80\% Recall & >50\% (baseline: DeBERTa 44.0\%) \\
+ & Entity Resolution & >20\% deduplication ratio on large contracts \\
+\midrule
+\textbf{Performance} & Contract Processing & <2 minutes per 50-page contract \\
+ & Query Latency & <3 seconds at 95th percentile \\
+ & KG Construction & <5 minutes for 100 contracts \\
+ & Concurrent Users & Support 50+ simultaneous users \\
+\midrule
+\textbf{Business} & Time Savings & >50\% reduction vs. manual review \\
+ & Cost Reduction & >60\% reduction in contract review costs \\
+ & User Adoption & >70\% of legal team using weekly by month 6 \\
+ & User Satisfaction & >4.0/5.0 in quarterly surveys \\
+\midrule
+\textbf{Technical} & System Uptime & >99.5\% availability \\
+ & API Success Rate & >99.9\% for retrieval endpoints \\
+ & Data Accuracy & <5\% error rate on critical clauses \\
+\bottomrule
+\end{tabular}
+\end{table}
+
+\subsection{Out of Scope}
+
+The following capabilities are explicitly out of scope for the initial release:
+
+\textbf{Contract Types:} Non-technology contracts including employment agreements, real estate leases, loan documents, and consumer contracts. Future phases may expand to additional domains.
+
+\textbf{Legal Services:} The system does not provide legal advice, risk assessment, or strategic recommendations. All outputs include disclaimers that analysis should be reviewed by qualified legal counsel.
+
+\textbf{Contract Generation:} The system does not draft, generate, or modify contracts. It is purely an analysis and extraction tool.
+
+\textbf{Multi-Jurisdiction Support:} Initial release focuses on common law contracts governed by US state law (primarily California, Delaware, New York). International and civil law jurisdictions are out of scope.
+
+\textbf{Real-Time Collaboration:} Multi-user editing, commenting, and version control features are deferred to later phases.
+
+\textbf{Advanced Analytics:} Predictive modeling, contract negotiation recommendations, and market benchmarking are future enhancements.
+

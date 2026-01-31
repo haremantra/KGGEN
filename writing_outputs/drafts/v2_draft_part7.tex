@@ -1,0 +1,195 @@
+\section{Data Schema and Knowledge Graph Structure}
+
+\subsection{Entity Types}
+
+\begin{figure}[H]
+\centering
+\includegraphics[width=0.95\textwidth]{../figures/contract_kg_schema.png}
+\caption{Knowledge graph schema showing entity types and relationships for legal contracts with example instances from a technology licensing agreement.}
+\label{fig:kg_schema}
+\end{figure}
+
+The knowledge graph schema (Figure~\ref{fig:kg_schema}) defines entity types as labeled nodes with properties.
+
+\begin{table}[H]
+\centering
+\caption{Entity type definitions and properties}
+\small
+\begin{tabular}{p{2.5cm}p{5.5cm}p{5.5cm}}
+\toprule
+\textbf{Entity Type} & \textbf{Description} & \textbf{Properties} \\
+\midrule
+Contract & Root entity for each contract & id, document\_name, contract\_type, page\_count, date\_uploaded, file\_path \\
+Party & Legal entities who are parties & name, role (licensor/licensee), organization\_type, address \\
+Clause & Contract provisions and terms & clause\_type (from CUAD labels), text, confidence\_score, page\_number, section \\
+Date & Temporal entities & date\_value, date\_type (effective/expiration/signature) \\
+License & License grants & scope (exclusive/non-exclusive), territory, perpetual (boolean), sublicense\_rights (boolean) \\
+Obligation & Requirements imposed on parties & obligation\_type, subject\_party, text, duration \\
+Right & Permissions granted to parties & right\_type, beneficiary\_party, text, conditions \\
+Law & Governing law and jurisdiction & jurisdiction (state/country), legal\_system (common/civil law) \\
+IP\_Rights & Intellectual property terms & ip\_type (patent/copyright/trademark), ownership (sole/joint), assignment (boolean) \\
+Liability & Liability provisions & cap\_amount, cap\_currency, uncapped (boolean), liability\_type \\
+Termination & Termination conditions & notice\_period, for\_cause (boolean), for\_convenience (boolean), fees \\
+\bottomrule
+\end{tabular}
+\end{table}
+
+\subsection{Relationship Types}
+
+Relationships connect entities and represent the structure of contract terms.
+
+\begin{table}[H]
+\centering
+\caption{Relationship type definitions}
+\small
+\begin{tabular}{p{3cm}p{3.5cm}p{3.5cm}p{3.5cm}}
+\toprule
+\textbf{Relationship} & \textbf{Source Entity} & \textbf{Target Entity} & \textbf{Description} \\
+\midrule
+HAS\_PARTY & Contract & Party & Contract involves party \\
+CONTAINS\_CLAUSE & Contract & Clause & Contract contains clause \\
+EFFECTIVE\_ON & Contract & Date & Contract effective date \\
+EXPIRES\_ON & Contract & Date & Contract expiration date \\
+SIGNED\_ON & Contract & Date & Contract signature date \\
+GOVERNED\_BY & Contract & Law & Governing law \\
+GRANTS\_LICENSE & Contract & License & License grant \\
+IMPOSES\_OBLIGATION & Clause & Obligation & Clause creates obligation \\
+CONFERS\_RIGHT & Clause & Right & Clause grants right \\
+RESTRICTS\_ACTION & Clause & Obligation & Clause restricts activity \\
+SPECIFIES\_LIABILITY & Clause & Liability & Liability provision \\
+DEFINES\_TERMINATION & Clause & Termination & Termination conditions \\
+BINDS\_PARTY & Obligation & Party & Obligation applies to party \\
+BENEFITS\_PARTY & Right & Party & Right benefits party \\
+COVERS\_IP & Clause & IP\_Rights & IP ownership/license \\
+ASSIGNS\_IP & Party & IP\_Rights & IP assignment \\
+SHARES\_IP & Party & IP\_Rights & Joint IP ownership \\
+REQUIRES\_NOTICE & Termination & Date & Notice period \\
+PERMITS\_TERMINATION & Clause & Termination & Termination allowed \\
+\bottomrule
+\end{tabular}
+\end{table}
+
+\subsection{Property Schemas}
+
+\subsubsection{Node Properties}
+
+\textbf{All Nodes:}
+\begin{itemize}
+    \item \texttt{id}: Unique identifier (UUID)
+    \item \texttt{created\_at}: Timestamp of extraction
+    \item \texttt{updated\_at}: Timestamp of last update
+    \item \texttt{source\_text}: Original contract text (for clauses/obligations)
+    \item \texttt{confidence\_score}: Extraction confidence 0-1
+\end{itemize}
+
+\textbf{Contract Properties:}
+\begin{itemize}
+    \item \texttt{document\_name}: String
+    \item \texttt{contract\_type}: Enum (License, Service, Joint Venture, etc.)
+    \item \texttt{page\_count}: Integer
+    \item \texttt{word\_count}: Integer
+    \item \texttt{file\_path}: S3 URI
+    \item \texttt{extraction\_version}: String (pipeline version)
+    \item \texttt{cuad\_category\_coverage}: JSON (which of 41 labels found)
+\end{itemize}
+
+\textbf{Clause Properties:}
+\begin{itemize}
+    \item \texttt{clause\_type}: Enum (from 41 CUAD labels)
+    \item \texttt{text}: String (extracted clause text)
+    \item \texttt{page\_number}: Integer
+    \item \texttt{section}: String (contract section name)
+    \item \texttt{start\_char}: Integer (character offset in document)
+    \item \texttt{end\_char}: Integer
+    \item \texttt{confidence\_score}: Float 0-1
+    \item \texttt{validated\_by\_human}: Boolean
+    \item \texttt{risk\_level}: Enum (low, medium, high, critical)
+\end{itemize}
+
+\subsubsection{Relationship Properties}
+
+All relationships can have:
+\begin{itemize}
+    \item \texttt{confidence\_score}: Float 0-1 (extraction confidence)
+    \item \texttt{source\_page}: Integer (page where relationship was extracted)
+    \item \texttt{extraction\_method}: Enum (LLM, rule-based, hybrid)
+\end{itemize}
+
+\subsection{Example Knowledge Graph}
+
+Consider a technology licensing agreement between Acme Corp (Licensor) and Beta Inc (Licensee):
+
+\textbf{Contract Node:}
+\begin{itemize}
+    \item id: ``c-12345''
+    \item document\_name: ``Software License Agreement''
+    \item contract\_type: ``License''
+    \item page\_count: 42
+\end{itemize}
+
+\textbf{Party Nodes:}
+\begin{itemize}
+    \item Party 1: \{name: ``Acme Corp'', role: ``Licensor''\}
+    \item Party 2: \{name: ``Beta Inc'', role: ``Licensee''\}
+\end{itemize}
+
+\textbf{License Node:}
+\begin{itemize}
+    \item scope: ``non-exclusive''
+    \item territory: ``worldwide''
+    \item perpetual: true
+    \item sublicense\_rights: false
+\end{itemize}
+
+\textbf{Obligation Node (Non-Compete):}
+\begin{itemize}
+    \item obligation\_type: ``Non-Compete''
+    \item text: ``Licensee shall not develop or distribute software that competes with the Licensed Software during the term and for 2 years thereafter.''
+    \item duration: ``term + 2 years''
+\end{itemize}
+
+\textbf{IP\_Rights Node:}
+\begin{itemize}
+    \item ip\_type: ``derivative works''
+    \item ownership: ``Licensor''
+    \item assignment: true
+\end{itemize}
+
+\textbf{Liability Node:}
+\begin{itemize}
+    \item cap\_amount: 1000000
+    \item cap\_currency: ``USD''
+    \item uncapped: false
+    \item liability\_type: ``general liability''
+\end{itemize}
+
+\textbf{Termination Node:}
+\begin{itemize}
+    \item notice\_period: ``90 days''
+    \item for\_cause: true
+    \item for\_convenience: true
+    \item fees: ``none''
+\end{itemize}
+
+\textbf{Key Relationships:}
+\begin{enumerate}
+    \item (Contract)-[HAS\_PARTY]$\rightarrow$(Acme Corp)
+    \item (Contract)-[HAS\_PARTY]$\rightarrow$(Beta Inc)
+    \item (Contract)-[GRANTS\_LICENSE]$\rightarrow$(License)
+    \item (Contract)-[GOVERNED\_BY]$\rightarrow$(California Law)
+    \item (Non-Compete Clause)-[IMPOSES\_OBLIGATION]$\rightarrow$(Obligation)
+    \item (Obligation)-[BINDS\_PARTY]$\rightarrow$(Beta Inc)
+    \item (IP Clause)-[COVERS\_IP]$\rightarrow$(IP\_Rights)
+    \item (Beta Inc)-[ASSIGNS\_IP]$\rightarrow$(IP\_Rights)
+    \item (Contract)-[EFFECTIVE\_ON]$\rightarrow$(2024-01-15)
+    \item (Contract)-[EXPIRES\_ON]$\rightarrow$(2027-01-15)
+\end{enumerate}
+
+This knowledge graph structure enables queries like:
+\begin{itemize}
+    \item ``What licenses has Acme Corp granted?''
+    \item ``Show all contracts with non-compete obligations binding Beta Inc''
+    \item ``Find contracts where IP ownership is assigned to the licensor''
+    \item ``List contracts governed by California law that expire in 2027''
+\end{itemize}
+

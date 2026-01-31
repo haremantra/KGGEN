@@ -1,0 +1,100 @@
+{
+  "domain": "Technology Agreements",
+  "scope": "AI software for lawyers - contract analysis tool",
+  "target_users": [
+    "Engineering team building AI legal software",
+    "Senior practicing lawyer in technology (team member)",
+    "Law firms reviewing technology contracts",
+    "Companies entering technology agreements"
+  ],
+  "core_entity_types": {
+    "parties": [
+      "Licensor",
+      "Licensee",
+      "Developer",
+      "Client",
+      "Vendor",
+      "Service Provider"
+    ],
+    "intellectual_property": [
+      "Source Code",
+      "Patents",
+      "Trademarks",
+      "Trade Secrets",
+      "Copyrights",
+      "Derivatives"
+    ],
+    "deliverables": [
+      "Software",
+      "Documentation",
+      "APIs",
+      "SDKs",
+      "Updates",
+      "Maintenance"
+    ],
+    "financial": [
+      "License Fees",
+      "Maintenance Fees",
+      "Royalties",
+      "Milestones",
+      "Penalties"
+    ],
+    "timeframes": [
+      "Term",
+      "Renewal Period",
+      "Notice Period",
+      "Warranty Period",
+      "Transition Period"
+    ]
+  },
+  "core_relationship_types": {
+    "ownership": [
+      "owns",
+      "assigns",
+      "retains",
+      "jointly_owns",
+      "licenses"
+    ],
+    "obligations": [
+      "must_provide",
+      "must_maintain",
+      "must_support",
+      "must_update",
+      "must_escrow"
+    ],
+    "restrictions": [
+      "cannot_compete",
+      "cannot_disclose",
+      "cannot_assign",
+      "cannot_sublicense"
+    ],
+    "rights": [
+      "can_terminate",
+      "can_audit",
+      "can_modify",
+      "has_right_to"
+    ],
+    "liability": [
+      "is_liable_for",
+      "is_not_liable_for",
+      "indemnifies",
+      "warrants"
+    ]
+  },
+  "common_law_considerations": {
+    "jurisdiction": "Common law systems (US, UK, Commonwealth)",
+    "key_principles": [
+      "Freedom of contract",
+      "Meeting of minds (mutual assent)",
+      "Consideration",
+      "Reasonableness standard",
+      "Good faith and fair dealing"
+    ],
+    "interpretation_rules": [
+      "Plain meaning rule",
+      "Contra proferentem (against the drafter)",
+      "Business efficacy test",
+      "Contextual interpretation"
+    ]
+  }
+}

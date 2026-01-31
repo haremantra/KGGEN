@@ -1,0 +1,2482 @@
+\documentclass[11pt,letterpaper]{article}
+
+% Packages
+\usepackage[utf8]{inputenc}
+\usepackage[T1]{fontenc}
+\usepackage[margin=1in]{geometry}
+\usepackage{graphicx}
+\usepackage{float}
+\usepackage{hyperref}
+\usepackage{xcolor}
+
+
+
+\usepackage{booktabs}
+\usepackage{longtable}
+\usepackage{array}
+\usepackage{multirow}
+\usepackage{caption}
+
+\usepackage{amsmath}
+\usepackage{amssymb}\n\usepackage{multicol}
+
+
+
+% Color definitions
+\definecolor{kdenseblue}{RGB}{0,102,204}
+\definecolor{kdensegray}{RGB}{100,100,100}
+\definecolor{codegray}{RGB}{245,245,245}
+
+% Hyperref setup
+\hypersetup{
+    colorlinks=true,
+    linkcolor=kdenseblue,
+    filecolor=kdenseblue,
+    urlcolor=kdenseblue,
+    citecolor=kdenseblue,
+    pdftitle={CUAD Knowledge Graph Generator PRD},
+    pdfauthor={K-Dense Web}
+}
+
+% Section formatting
+% \titleformat{\section}
+
+
+% \titleformat{\subsection}
+
+
+
+% Header and footer
+% \pagestyle{fancy}
+
+
+
+
+
+
+
+
+% Code listing setup
+% \lstset{
+    backgroundcolor=\color{codegray},
+    basicstyle=\ttfamily\small,
+    breaklines=true,
+    captionpos=b,
+    frame=single,
+    numbers=left,
+    numberstyle=\tiny\color{kdensegray},
+    showstringspaces=false
+}
+
+% Custom boxes
+}
+
+}
+
+% Graphics path
+\graphicspath{{../figures/}}
+
+% Document metadata
+\title{\Huge\bfseries Product Requirements Document\\[0.5em]
+       \LARGE CUAD Knowledge Graph Generator for Legal AI\\[0.3em]
+       \large Applying KGGen Methodology to Technology Contract Analysis}
+\author{K-Dense Web\\
+        \href{mailto:contact@k-dense.ai}{contact@k-dense.ai}}
+\date{Version 1.0 | January 12, 2026 | Draft}
+
+\begin{document}
+
+% Title page
+\maketitle
+\thispagestyle{empty}
+
+\begin{center}
+\vspace{1cm}
+\includegraphics[width=0.9\textwidth]{graphical_abstract.png}
+\captionof{figure}{CUAD Knowledge Graph Generator System Overview}
+\end{center}
+
+\vspace{1cm}
+
+\begin{tcolorbox}[colback=kdenseblue!10,colframe=kdenseblue,title=Document Classification]
+\textbf{Status:} Draft\\
+\textbf{Classification:} Technical Product Specification\\
+\textbf{Target Audience:} Engineering team building AI legal software, Senior technology lawyers, Data scientists working on legal NLP, Product managers for legal tech solutions\\
+\textbf{Version:} 1.0\\
+\textbf{Last Updated:} January 12, 2026
+\end{tcolorbox}
+
+\newpage
+
+% Table of contents
+\tableofcontents
+\newpage
+
+% Executive Summary
+\section{Executive Summary}
+
+\subsection{Problem Statement}
+
+Legal contract review faces critical challenges that limit access to justice and business efficiency:
+
+\begin{itemize}
+    \item \textbf{Cost barrier:} Legal services cost \$500--\$900 per hour, making contract review prohibitively expensive for small businesses and individuals
+    \item \textbf{Time intensive:} Contract review consumes approximately 50\% of law firm billable hours, creating bottlenecks in business transactions
+    \item \textbf{Limited AI understanding:} Current AI solutions lack structured understanding of contractual relationships, relying primarily on text retrieval without comprehending legal semantics
+    \item \textbf{Jurisdictional complexity:} Common law contract interpretation requires nuanced understanding of legal principles that current systems fail to capture
+    \item \textbf{Knowledge extraction gap:} Unstructured contract text prevents systematic analysis, comparison, and reasoning across contract portfolios
+\end{itemize}
+
+These challenges result in delayed transactions, missed risks, inconsistent terms, and barriers to legal service accessibility.
+
+\subsection{Proposed Solution}
+
+This Product Requirements Document specifies a \textbf{knowledge graph extraction system} that applies the KGGen methodology to the CUAD (Contract Understanding Atticus Dataset) contract corpus. The system creates structured ontologies of technology agreements that enable context-aware Large Language Model (LLM) analysis aligned with common law principles.
+
+\noindent\fbox{\parbox{\textwidth}{
+\textbf{Core Innovation:} Transform unstructured contract text into queryable knowledge graphs that capture legal relationships, obligations, restrictions, and IP rights with 98\% accuracy, enabling LLMs to reason about contracts with precision rather than probabilistic text matching.
+}}
+
+\subsection{Key Benefits}
+
+\subsubsection{Technical Benefits}
+
+\begin{itemize}
+    \item \textbf{Structured contract understanding:} Convert 510+ CUAD contracts with 41 clause types into queryable knowledge graphs containing 50,000--100,000 verified triples
+    \item \textbf{Context-aware AI:} Provide LLMs with precise contractual relationships (licenses, obligations, restrictions) rather than raw text chunks, enabling accurate reasoning
+    \item \textbf{Common law alignment:} Ontology designed to respect legal interpretation principles including plain meaning, business efficacy, and jurisdictional nuances
+    \item \textbf{High accuracy:} Target 98\% valid triple extraction (validated against KGGen benchmarks), 65\%+ MINE-1 information retention score
+    \item \textbf{Scalability:} Process contracts at 100+ per hour with multi-hop reasoning capabilities supporting complex queries
+\end{itemize}
+
+\subsubsection{Business Benefits}
+
+\begin{itemize}
+    \item \textbf{50\% time reduction:} Accelerate contract review cycles from days to hours through automated extraction and analysis
+    \item \textbf{Automated clause identification:} Enable instant identification and extraction of 41+ contract clause categories without manual review
+    \item \textbf{Risk mitigation:} Proactively identify unusual or risky provisions across contract portfolios
+    \item \textbf{Democratized access:} Scale legal support to small businesses and individuals through AI-powered analysis tools
+    \item \textbf{Negotiation leverage:} Rapid comparison of terms across contracts provides data-driven negotiation insights
+\end{itemize}
+
+\subsubsection{User Benefits}
+
+\begin{itemize}
+    \item \textbf{Engineer empowerment:} Build reliable legal AI features with structured data rather than brittle text parsing
+    \item \textbf{Lawyer validation:} Validate AI outputs through transparent knowledge graph representations with source tracing
+    \item \textbf{Rapid prototyping:} Accelerate development of legal analysis tools with comprehensive contract knowledge base
+    \item \textbf{Explainable AI:} Provide interpretable reasoning through explicit knowledge graph traversal and relationship extraction
+\end{itemize}
+
+\subsection{Technology Agreement Focus}
+
+The system specializes in \textbf{technology contracts}, which have unique characteristics requiring specialized ontological treatment:
+
+\begin{itemize}
+    \item IP ownership and licensing (patents, source code, trademarks)
+    \item SaaS and software licensing terms
+    \item Development and customization agreements
+    \item Open source compliance and derivative works
+    \item API access and integration rights
+    \item Data ownership and processing obligations
+    \item Service level agreements (SLAs) and uptime guarantees
+    \item Maintenance, support, and escrow provisions
+\end{itemize}
+
+Approximately 200 of the 510 CUAD contracts focus on technology agreements, providing substantial training data for this specialized domain.
+
+\subsection{Success Metrics}
+
+\paragraph{Technical Metrics}
+\begin{itemize}
+    \item Extract knowledge graphs from 510 CUAD contracts with 98\% triple validity
+    \item Achieve 65\%+ MINE-1 score (information retention metric)
+    \item Process contracts at scale: 100+ contracts per hour
+    \item Support multi-hop reasoning with 2-hop subgraph expansion
+    \item Query latency under 500ms for simple queries, under 2 seconds for complex queries
+\end{itemize}
+
+\paragraph{Business Metrics}
+\begin{itemize}
+    \item Reduce contract review time by 50\%
+    \item Enable automated clause identification for all 41 CUAD categories
+    \item Provide instant answers to common contract queries with 90\%+ accuracy
+    \item Achieve 4/5+ user satisfaction rating from legal practitioners
+\end{itemize}
+
+\paragraph{Legal Metrics}
+\begin{itemize}
+    \item 95\%+ agreement between lawyer validation and system outputs
+    \item Less than 2\% critical error rate
+    \item 100\% compliance with data protection regulations
+\end{itemize}
+
+\newpage
+
+% Problem Statement & Scope
+\section{Problem Statement \& Scope}
+
+\subsection{Detailed Problem Analysis}
+
+\subsubsection{Current State of Contract Analysis}
+
+Legal contract review remains one of the most labor-intensive tasks in legal practice. Despite advances in document management and search technology, the fundamental process relies on human lawyers reading, interpreting, and analyzing each contract clause manually.
+
+\paragraph{Quantifiable Challenges}
+
+\begin{table}[H]
+\centering
+\caption{Contract Review Cost Analysis}
+\begin{tabular}{@{}lll@{}}
+\toprule
+\textbf{Metric} & \textbf{Typical Value} & \textbf{Impact} \\
+\midrule
+Hourly rate & \$500--\$900 & Prohibitive for SMBs \\
+Time per contract & 2--8 hours & Delays transactions \\
+Portfolio review (100 contracts) & 200--800 hours & Weeks to months \\
+Error rate (manual review) & 5--10\% & Risk exposure \\
+Consistency across reviewers & Variable & Negotiation challenges \\
+\bottomrule
+\end{tabular}
+\end{table}
+
+\subsubsection{Limitations of Existing AI Solutions}
+
+Current legal AI tools fall into three categories, each with significant limitations:
+
+\begin{enumerate}
+    \item \textbf{Text search and retrieval:} Tools like LexisNexis and Westlaw provide keyword search but lack semantic understanding of contractual relationships
+
+    \item \textbf{Clause classification:} ML models classify contract clauses but do not extract structured relationships or support reasoning
+
+    \item \textbf{RAG-based LLMs:} Retrieval-Augmented Generation systems retrieve relevant text chunks but provide probabilistic answers without structured knowledge representation
+\end{enumerate}
+
+\noindent\fbox{\parbox{\textwidth}{\textbf{Important:} 
+\textbf{Critical Gap:} Existing solutions cannot answer questions requiring multi-hop reasoning such as: ``Which contracts grant exclusive IP licenses to parties subject to California law with liability caps under \$1M?'' This requires understanding relationships between parties, IP assets, licenses, jurisdictions, and liability provisions simultaneously.
+}}
+
+\subsubsection{Knowledge Graph Solution Advantages}
+
+Knowledge graphs address these limitations by:
+
+\begin{itemize}
+    \item \textbf{Explicit relationships:} Model legal relationships as typed edges (licenses\_to, assigns, must\_provide) rather than implicit text patterns
+    \item \textbf{Multi-hop reasoning:} Enable queries spanning multiple relationship types (Party $\rightarrow$ License $\rightarrow$ IPAsset $\rightarrow$ Restrictions)
+    \item \textbf{Structured properties:} Attach legal attributes (exclusivity, scope, duration) as graph properties for precise filtering
+    \item \textbf{Provenance tracking:} Link every triple back to source contract and clause for validation
+    \item \textbf{Aggregation and analytics:} Systematically analyze patterns across hundreds of contracts
+\end{itemize}
+
+\subsection{Scope Definition}
+
+\subsubsection{In Scope}
+
+\begin{enumerate}
+    \item \textbf{Data source:} Complete CUAD dataset (510 contracts, 41 label categories, 13,101 expert annotations)
+
+    \item \textbf{Contract types:} Technology-focused agreements including License, Development, IP Assignment, Service, Hosting, Maintenance, and Consulting agreements (~200 contracts)
+
+    \item \textbf{Extraction pipeline:} Full 3-stage KGGen implementation (Extraction, Aggregation, Resolution) adapted for legal domain
+
+    \item \textbf{Ontology:} Comprehensive legal contract ontology covering:
+    \begin{itemize}
+        \item 8 entity types: Party, IPAsset, Obligation, Restriction, LiabilityProvision, Temporal, Jurisdiction, ContractClause
+        \item 10+ relationship types: licenses\_to, owns, assigns, must\_provide, cannot\_compete, governed\_by, etc.
+        \item Properties: exclusivity, scope, duration, financial terms, conditions
+    \end{itemize}
+
+    \item \textbf{LLM integration:} Context provider for Claude Sonnet 3.5 / GPT-4o with hybrid retrieval (BM25 + semantic search)
+
+    \item \textbf{Query interface:} REST API supporting contract Q\&A, risk analysis, comparison, and compliance checking
+
+    \item \textbf{Common law context:} US/UK/Commonwealth contract interpretation principles embedded in extraction and resolution logic
+\end{enumerate}
+
+\subsubsection{Out of Scope (Future Work)}
+
+\begin{enumerate}
+    \item Civil law jurisdictions (Continental Europe, Latin America, Asia)
+    \item Non-technology contracts (real estate, employment, finance) - different ontological requirements
+    \item Contract generation or drafting - focus is on analysis only
+    \item Real-time contract monitoring or alerts
+    \item Integration with specific document management systems
+    \item Fine-tuning custom LLMs - use foundation models via API
+\end{enumerate}
+
+\subsection{Target Use Cases}
+
+\subsubsection{Use Case 1: Automated Contract Q\&A}
+
+\paragraph{Description:} Enable natural language questions about specific contract terms with precise, cited answers.
+
+\paragraph{Example:}
+\begin{itemize}
+    \item \textbf{Question:} ``What IP rights does the licensee receive in the ABC Corp software license agreement?''
+    \item \textbf{System Process:}
+    \begin{enumerate}
+        \item Retrieve relevant triples: (ABC Corp, licenses\_to, Licensee), (License, type, non-exclusive), (License, scope, worldwide)
+        \item Expand to 2-hop neighbors to capture license restrictions
+        \item Generate answer with LLM using structured context
+    \end{enumerate}
+    \item \textbf{Answer:} ``The licensee receives a non-exclusive, worldwide license to use and modify the software. However, the license is non-transferable and cannot be sublicensed to third parties. [Citation: Contract ID ABC-2023-001, Section 2.1]''
+\end{itemize}
+
+\paragraph{Value:} Instant answers without manual contract reading, with source citations for lawyer verification.
+
+\subsubsection{Use Case 2: Risk Analysis Dashboard}
+
+\paragraph{Description:} Identify unusual or risky clauses across entire contract portfolio.
+
+\paragraph{Example Queries:}
+\begin{itemize}
+    \item Contracts with uncapped liability provisions
+    \item Non-compete restrictions exceeding 2 years
+    \item Missing IP assignment clauses in development agreements
+    \item Aggressive indemnification obligations
+    \item Absence of limitation of liability or audit rights
+\end{itemize}
+
+\paragraph{Value:} Proactive risk management before contract execution or during portfolio audits.
+
+\subsubsection{Use Case 3: Contract Comparison}
+
+\paragraph{Description:} Compare contractual terms across multiple agreements or against standard templates.
+
+\paragraph{Example:}
+\begin{itemize}
+    \item \textbf{Task:} ``Compare license terms across 50 vendor agreements''
+    \item \textbf{System Output:} Table showing:
+    \begin{itemize}
+        \item License type (exclusive vs non-exclusive)
+        \item Scope (worldwide, US-only, specific territories)
+        \item Duration (perpetual, term-limited)
+        \item Transfer rights (transferable, non-transferable)
+        \item Sublicense permissions
+    \end{itemize}
+\end{itemize}
+
+\paragraph{Value:} Negotiation leverage through understanding market norms and outlier terms.
+
+\subsubsection{Use Case 4: Compliance Verification}
+
+\paragraph{Description:} Verify contracts meet company policies or regulatory requirements.
+
+\paragraph{Example:}
+\begin{itemize}
+    \item \textbf{Policy:} ``All vendor contracts must include \$5M+ liability insurance, audit rights, and GDPR compliance clauses''
+    \item \textbf{System Process:}
+    \begin{enumerate}
+        \item Query knowledge graph for vendor contracts
+        \item Check for presence of required provisions
+        \item Flag non-compliant contracts
+    \end{enumerate}
+    \item \textbf{Output:} ``15 of 120 vendor contracts lack required audit rights provisions. [List of contract IDs]''
+\end{itemize}
+
+\paragraph{Value:} Automated compliance monitoring reducing legal and financial risk.
+
+\subsubsection{Use Case 5: Due Diligence Acceleration}
+
+\paragraph{Description:} Rapid contract review for M\&A transactions, financing, or audits.
+
+\paragraph{Example:}
+\begin{itemize}
+    \item \textbf{Task:} ``Extract all change-of-control provisions from 200 contracts for M\&A due diligence''
+    \item \textbf{Traditional Approach:} 200--400 hours of lawyer time (\$100,000--\$360,000)
+    \item \textbf{KG Approach:} Query knowledge graph for change-of-control nodes, generate report in minutes
+\end{itemize}
+
+\paragraph{Value:} Deal velocity improvement and cost reduction in time-sensitive transactions.
+
+\newpage
+
+% System Architecture
+\section{System Architecture}
+
+\subsection{Architecture Overview}
+
+The CUAD Knowledge Graph Generator implements a \textbf{three-stage pipeline} adapting the KGGen methodology for legal contract analysis. Figure~\ref{fig:system_architecture} illustrates the complete system architecture.
+
+\begin{figure}[H]
+\centering
+\includegraphics[width=\textwidth]{system_architecture.png}
+\caption{Complete System Architecture: Three-stage pipeline from CUAD contracts to LLM-powered applications}
+\label{fig:system_architecture}
+\end{figure}
+
+\paragraph{Data Flow:}
+\begin{equation*}
+\text{CUAD Contracts} \xrightarrow{\text{Stage 1}} \text{Per-Contract Graphs} \xrightarrow{\text{Stage 2}} \text{Unified Graph} \xrightarrow{\text{Stage 3}} \text{Resolved Graph} \xrightarrow{\text{Query}} \text{LLM Context}
+\end{equation*}
+
+\subsection{Stage 1: Knowledge Extraction}
+
+\subsubsection{Purpose}
+
+Extract entities and relationships from individual CUAD contracts using LLM-based structured extraction.
+
+\subsubsection{Input Processing}
+
+\paragraph{Contract Preprocessing:}
+\begin{enumerate}
+    \item \textbf{PDF extraction:} Use pdfplumber or PyPDF2 to extract text from CUAD PDF contracts
+    \item \textbf{Section identification:} Segment contract into logical sections (parties, recitals, terms, schedules, exhibits)
+    \item \textbf{CUAD label alignment:} Map CUAD expert annotations (41 categories) to extracted text spans
+    \item \textbf{Quality validation:} Verify text extraction quality, handle OCR errors if present
+\end{enumerate}
+
+\begin{figure}[H]
+\centering
+\includegraphics[width=0.9\textwidth]{kggen_pipeline_legal.png}
+\caption{KGGen Pipeline Applied to Legal Contracts: Three-stage extraction, aggregation, and resolution process}
+\label{fig:kggen_pipeline}
+\end{figure}
+
+\subsubsection{Two-Step Extraction Process}
+
+The extraction follows a two-step prompting strategy proven effective in KGGen:
+
+\paragraph{Step 1: Entity Extraction}
+
+\textbf{LLM Prompt:}
+\begin{verbatim}% Caption: Entity Extraction Prompt Template]
+Extract all legal entities from the following contract text.
+
+Entity types to identify:
+- Party: Legal entities that are parties to the contract
+- IPAsset: Intellectual property (patents, copyrights,
+           trademarks, source code, trade secrets)
+- Obligation: Performance obligations or deliverables
+- Restriction: Prohibitions or limitations
+- LiabilityProvision: Liability, indemnity, warranty clauses
+- Temporal: Dates, durations, deadlines
+- Jurisdiction: Governing law, venue, legal system
+- ContractClause: Named contract provisions
+
+For each entity, provide:
+{
+  "name": "entity name as appears in contract",
+  "type": "entity type from list above",
+  "properties": {
+    "defined_term": "capitalized defined term if any",
+    "cuad_label": "CUAD category if applicable",
+    "source_section": "contract section reference"
+  }
+}
+
+Contract text:
+[CONTRACT_TEXT]
+
+Output JSON array of entities.
+\end{verbatim}
+
+\textbf{Constraints:}
+\begin{itemize}
+    \item Preserve legal distinctions (e.g., ``exclusive license'' vs ``non-exclusive license'')
+    \item Respect contract defined terms (capitalized terms have specific legal meanings)
+    \item Identify all parties and their roles (licensor, licensee, vendor, customer)
+    \item Extract all temporal elements with context (effective date, expiration date, notice period)
+\end{itemize}
+
+\paragraph{Step 2: Relation Extraction}
+
+\textbf{LLM Prompt:}
+\begin{verbatim}% Caption: Relation Extraction Prompt Template]
+Given the entities extracted from the contract, identify all
+legal relationships between entities.
+
+Relation types:
+- licenses_to: Grant of license from one party to another
+- owns: Ownership of IP or assets
+- assigns: Transfer of ownership or rights
+- retains: Retention of rights or ownership
+- must_provide: Obligation to deliver or perform
+- must_maintain: Obligation to maintain or support
+- cannot_compete: Non-compete restriction
+- cannot_disclose: Confidentiality obligation
+- cannot_assign: Anti-assignment clause
+- is_liable_for: Liability assignment
+- is_not_liable_for: Liability exclusion or limitation
+- indemnifies: Indemnification obligation
+- governed_by: Governing law/jurisdiction
+- effective_on: Effective date
+- terminates_on: Termination date
+- renews_after: Renewal term
+
+For each relation, provide:
+{
+  "subject": "entity name",
+  "predicate": "relation type",
+  "object": "entity name",
+  "properties": {
+    "scope": "scope of relationship",
+    "conditions": "any conditions or qualifiers",
+    "exclusivity": "exclusive or non-exclusive",
+    "source_clause": "contract clause reference"
+  }
+}
+
+Entities:
+[EXTRACTED_ENTITIES]
+
+Contract text:
+[CONTRACT_TEXT]
+
+Output JSON array of (subject, predicate, object, properties)
+triples.
+\end{verbatim}
+
+\textbf{Constraints:}
+\begin{itemize}
+    \item Link relations to specific parties (not generic references)
+    \item Capture conditions and exceptions (``unless'', ``provided that'', ``subject to'')
+    \item Preserve temporal aspects (``upon payment'', ``after 30 days'', ``during the term'')
+    \item Note jurisdiction-specific legal terms and their meanings
+\end{itemize}
+
+\subsubsection{CUAD Integration}
+
+CUAD provides 13,101 expert annotations across 41 label categories. The extraction process leverages these annotations as extraction hints:
+
+\paragraph{Label-to-Relation Mapping:}
+
+\begin{table}[H]
+\centering
+\caption{CUAD Labels Mapped to Knowledge Graph Relations}
+\small
+\begin{tabular}{@{}ll@{}}
+\toprule
+\textbf{CUAD Label} & \textbf{Target Relations} \\
+\midrule
+IP\_Ownership\_Assignment & assigns, owns \\
+License\_Grant & licenses\_to, has\_right\_to \\
+Non\_Compete & cannot\_compete, restricted\_from \\
+Cap\_On\_Liability & has\_liability\_cap, limited\_to \\
+Governing\_Law & governed\_by \\
+Effective\_Date & effective\_on \\
+Expiration\_Date & terminates\_on \\
+Renewal\_Term & renews\_after, extends\_for \\
+Non\_Transferable\_License & cannot\_assign \\
+Exclusivity & has\_exclusivity \\
+\bottomrule
+\end{tabular}
+\end{table}
+
+\paragraph{Extraction Process:}
+\begin{enumerate}
+    \item For each contract, identify clauses by CUAD category
+    \item Focus extraction on text spans annotated with relevant CUAD labels
+    \item Extract entities and relations from those spans using LLM
+    \item Benefit: Leverage \$2M+ of expert legal annotation to guide extraction
+\end{enumerate}
+
+\subsubsection{LLM Configuration}
+
+\begin{table}[H]
+\centering
+\caption{LLM Models for Extraction Stage}
+\begin{tabular}{@{}llll@{}}
+\toprule
+\textbf{Model} & \textbf{MINE-1 Score} & \textbf{Use Case} & \textbf{Cost/Contract} \\
+\midrule
+Claude Sonnet 3.5 & 73\% & Primary extraction & \$0.15--\$0.30 \\
+GPT-4o & 66\% & Fallback & \$0.10--\$0.20 \\
+Gemini 2.0 Flash & 44\% & Not recommended & \$0.05--\$0.10 \\
+\bottomrule
+\end{tabular}
+\end{table}
+
+\textbf{Recommendation:} Use Claude Sonnet 3.5 as primary model due to superior MINE-1 performance (73\%), indicating better information retention and fewer hallucinations. Configure GPT-4o as automatic fallback if Claude API unavailable.
+
+\subsubsection{Output Format}
+
+\paragraph{Example Extracted Triples:}
+
+\begin{verbatim}% Caption: Sample Extraction Output]
+{
+  "contract_id": "CUAD_LicenseAgreement_042",
+  "extraction_timestamp": "2026-01-12T14:30:00Z",
+  "llm_model": "claude-sonnet-3.5-20241022",
+  "triples": [
+    {
+      "subject": "ABC Corp",
+      "subject_type": "Party",
+      "predicate": "licenses_to",
+      "object": "XYZ Inc",
+      "object_type": "Party",
+      "properties": {
+        "license_type": "exclusive",
+        "scope": "worldwide",
+        "field_of_use": "software development",
+        "source_clause": "Section 2.1"
+      },
+      "confidence": 0.95
+    },
+    {
+      "subject": "ABC Corp",
+      "subject_type": "Party",
+      "predicate": "assigns",
+      "object": "Source Code",
+      "object_type": "IPAsset",
+      "properties": {
+        "assignment_type": "full ownership",
+        "effective": "upon final payment",
+        "source_clause": "Section 3.2"
+      },
+      "confidence": 0.92
+    },
+    {
+      "subject": "Agreement",
+      "subject_type": "Contract",
+      "predicate": "governed_by",
+      "object": "California",
+      "object_type": "Jurisdiction",
+      "properties": {
+        "legal_system": "common_law",
+        "venue": "Santa Clara County",
+        "source_clause": "Section 12.5"
+      },
+      "confidence": 0.98
+    }
+  ],
+  "statistics": {
+    "entities_extracted": 47,
+    "triples_extracted": 89,
+    "extraction_time_seconds": 23.4
+  }
+}
+\end{verbatim}
+
+\subsubsection{Performance Targets}
+
+\begin{itemize}
+    \item \textbf{Throughput:} 1--2 contracts per minute per worker
+    \item \textbf{Accuracy:} 95\%+ entity extraction accuracy (validated against CUAD annotations)
+    \item \textbf{Coverage:} Extract from all 41 CUAD label categories
+    \item \textbf{Consistency:} Maintain within-contract consistency between entities and relations
+\end{itemize}
+
+\subsection{Stage 2: Knowledge Aggregation}
+
+\subsubsection{Purpose}
+
+Combine knowledge graphs from 510 individual contracts into unified graph(s) with normalization and deduplication.
+
+\subsubsection{Aggregation Dimensions}
+
+Knowledge graphs can be aggregated along multiple dimensions:
+
+\begin{enumerate}
+    \item \textbf{Global:} All 510 contracts combined into single knowledge graph
+    \item \textbf{By contract type:} All License Agreements, All Development Agreements, etc.
+    \item \textbf{By jurisdiction:} All California contracts, All Delaware contracts, etc.
+    \item \textbf{By time period:} Contracts from 2020--2023
+    \item \textbf{By party:} All contracts involving specific organization
+\end{enumerate}
+
+The system supports multiple simultaneous aggregations to enable comparative analysis.
+
+\subsubsection{Normalization Process}
+
+\paragraph{Text Normalization:}
+\begin{itemize}
+    \item Convert to lowercase for matching: ``Source Code'' $\rightarrow$ ``source code''
+    \item Remove punctuation and extra whitespace
+    \item Standardize abbreviations: ``IP'' $\rightarrow$ ``Intellectual Property''
+\end{itemize}
+
+\paragraph{Legal Term Normalization:}
+
+Legal language has specific conventions that must be preserved during normalization:
+
+\begin{table}[H]
+\centering
+\caption{Legal Term Normalization Examples}
+\begin{tabular}{@{}ll@{}}
+\toprule
+\textbf{Variations} & \textbf{Normalized Form} \\
+\midrule
+shall provide, will provide, must provide & must\_provide \\
+is obligated to deliver, required to deliver & must\_provide \\
+has exclusive rights to, exclusively owns & exclusively\_owns \\
+cannot compete, may not compete, prohibited from & cannot\_compete \\
+governed by law of, subject to laws of & governed\_by \\
+\bottomrule
+\end{tabular}
+\end{table}
+
+\noindent\fbox{\parbox{\textwidth}{\textbf{Important:} 
+\textbf{Legal Preservation Rule:} Maintain legal significance during normalization. ``SHALL'' (mandatory), ``MAY'' (optional), and ``SHOULD'' (recommended) have distinct legal meanings and must NOT be merged.
+}}
+
+\paragraph{Entity Normalization:}
+\begin{itemize}
+    \item \textbf{Parties:} Normalize party names but preserve legal entity distinctions (Inc. vs LLC vs Corp)
+    \item \textbf{IP Assets:} Standardize IP terminology (``software'' vs ``the Software'' vs ``Licensed Software'')
+    \item \textbf{Temporal:} Normalize all dates to ISO 8601 format (YYYY-MM-DD)
+    \item \textbf{Financial:} Standardize currency (USD) and amount formats (\$1,000,000)
+\end{itemize}
+
+\subsubsection{Deduplication}
+
+\paragraph{Exact Match Removal:}
+\begin{itemize}
+    \item Remove identical triples appearing across multiple contracts
+    \item Example: If 50 contracts state (Agreement, governed\_by, California), store once with list of source contracts
+\end{itemize}
+
+\paragraph{Near-Match Identification:}
+\begin{itemize}
+    \item Flag similar but not identical triples for Stage 3 resolution
+    \item Example: ``licenses software to'' vs ``grants license of software to'' vs ``provides license for software to''
+\end{itemize}
+
+\paragraph{Statistics Tracking:}
+
+The aggregation stage computes valuable statistics for analysis:
+
+\begin{itemize}
+    \item \textbf{Triple frequency:} How often does each triple pattern occur? (e.g., 73\% of contracts have liability caps)
+    \item \textbf{Entity distribution:} Which entities appear most frequently? (e.g., California governing law in 45\% of contracts)
+    \item \textbf{Relation patterns:} Common relationship structures (e.g., Party $\rightarrow$ licenses\_to $\rightarrow$ Party $\rightarrow$ owns $\rightarrow$ IPAsset)
+    \item \textbf{Contract coverage:} Which contracts contain specific clause types?
+\end{itemize}
+
+\subsubsection{Output Statistics}
+
+\begin{table}[H]
+\centering
+\caption{Estimated Aggregation Output (510 Contracts)}
+\begin{tabular}{@{}lr@{}}
+\toprule
+\textbf{Metric} & \textbf{Estimated Value} \\
+\midrule
+Total triples extracted & 50,000--100,000 \\
+Unique entities (before resolution) & 10,000--20,000 \\
+Unique relation types (before resolution) & 500--1,000 \\
+Exact duplicate triples removed & 20--30\% \\
+Near-duplicate clusters for resolution & 5,000--10,000 \\
+Contracts successfully processed & 510 \\
+\bottomrule
+\end{tabular}
+\end{table}
+
+\subsubsection{Performance Targets}
+
+\begin{itemize}
+    \item \textbf{Processing time:} Aggregate 510 contracts in under 10 minutes
+    \item \textbf{Memory efficiency:} Process in batches if dataset exceeds available RAM
+    \item \textbf{Storage:} Use compressed graph representation (estimated 1--2 GB for unified graph)
+\end{itemize}
+
+\subsection{Stage 3: Entity and Edge Resolution}
+
+\subsubsection{Purpose}
+
+Reduce knowledge graph sparsity by identifying and merging equivalent entities and relations, creating canonical representations.
+
+\noindent\fbox{\parbox{\textwidth}{
+\textbf{Resolution Goal:} Transform sparse graph with many near-duplicate nodes/edges into dense graph with canonical entities, while preserving legally significant distinctions. Target 80\% reduction in unique relation types, 40--50\% reduction in entities.
+}}
+
+\begin{figure}[H]
+\centering
+\includegraphics[width=0.9\textwidth]{tech_agreement_workflow.png}
+\caption{Technology Agreement Analysis Workflow: From contract input to structured knowledge extraction}
+\label{fig:tech_workflow}
+\end{figure}
+
+\subsubsection{Five-Step Resolution Algorithm}
+
+The resolution process implements KGGen's five-step pipeline:
+
+\paragraph{Step 1: Embedding and Clustering}
+
+\begin{itemize}
+    \item \textbf{Embedding model:} S-BERT (Sentence-BERT) for entity/relation text embeddings
+    \item \textbf{Clustering algorithm:} K-means clustering with k=128
+    \item \textbf{Purpose:} Group similar entities/relations into manageable clusters for LLM processing
+    \item \textbf{Parallelization:} Process 128 clusters in parallel to optimize throughput
+\end{itemize}
+
+\paragraph{Step 2: Fused Retrieval}
+
+Within each cluster, identify most similar entities using hybrid search:
+
+\begin{itemize}
+    \item \textbf{BM25 (keyword matching):} Weight = 0.5
+    \item \textbf{Semantic similarity (cosine):} Weight = 0.5
+    \item \textbf{Top-K:} Retrieve 16 most similar entities
+    \item \textbf{Purpose:} Provide LLM with candidate duplicates for evaluation
+\end{itemize}
+
+\paragraph{Step 3: LLM-Based Deduplication}
+
+\textbf{LLM Prompt:}
+\begin{verbatim}% Caption: Entity Deduplication Prompt]
+Identify exact duplicates from the following list of legal
+entities extracted from contracts.
+
+Entities are duplicates if they refer to the SAME legal
+concept, considering:
+- Tense variations: provide/provides/provided
+- Plurality: license/licenses
+- Case: Source Code/source code/SOURCE CODE
+- Abbreviations: IP/Intellectual Property
+- Legal shorthand: non-compete/covenant not to compete
+
+DO NOT merge if:
+- Legally distinct: exclusive vs non-exclusive license
+- Different jurisdictions: California law vs Delaware law
+- Different parties: ABC Corp vs XYZ Inc (even if similar)
+- Defined terms: "Software" (capitalized defined term) vs
+  "software" (generic)
+- Semantically different in legal context
+
+Entities:
+[LIST_OF_ENTITIES]
+
+Output JSON array of duplicate groups:
+[
+  ["entity1", "entity2", "entity3"],  // duplicate group 1
+  ["entity4", "entity5"],              // duplicate group 2
+  ...
+]
+\end{verbatim}
+
+\textbf{Legal Constraints:}
+\begin{itemize}
+    \item Do NOT merge ``exclusive license'' and ``non-exclusive license'' (legally distinct)
+    \item Do NOT merge jurisdiction-specific terms (``California governing law'' $\neq$ ``Delaware governing law'')
+    \item Preserve contract defined terms (capitalized terms have specific meanings)
+    \item Respect semantic differences in legal context (``assign'' $\neq$ ``license'' even if similar in embedding space)
+\end{itemize}
+
+\paragraph{Step 4: Canonicalization}
+
+Select canonical representative for each duplicate group:
+
+\textbf{LLM Prompt:}
+\begin{verbatim}% Caption: Canonicalization Prompt]
+Select the best canonical representative for this group of
+duplicate legal entities.
+
+Criteria:
+1. Most legally precise
+2. Most commonly used in legal contracts
+3. Clearest meaning to legal practitioners
+4. Matches CUAD terminology when applicable
+
+Duplicate group:
+[LIST_OF_DUPLICATES]
+
+Output:
+{
+  "canonical": "selected canonical form",
+  "rationale": "explanation of selection",
+  "aliases": ["other forms to map to canonical"]
+}
+\end{verbatim}
+
+\textbf{Example:}
+\begin{itemize}
+    \item \textbf{Variants:} [``Software'', ``the Software'', ``Licensed Software'', ``the Program'', ``the Application'']
+    \item \textbf{Canonical:} ``Licensed Software''
+    \item \textbf{Rationale:} Most legally precise, clearly indicates licensed status
+    \item \textbf{Aliases:} [``Software'', ``the Program'', ``the Application'']
+\end{itemize}
+
+\paragraph{Step 5: Iteration}
+
+\begin{enumerate}
+    \item Remove processed entities from cluster
+    \item Repeat Steps 2--4 until cluster is empty
+    \item Move to next cluster
+    \item Process all 128 clusters in parallel
+\end{enumerate}
+
+\subsubsection{Canonical Entity Examples}
+
+\begin{table}[H]
+\centering
+\caption{Entity Resolution Examples}
+\small
+\begin{tabular}{@{}p{5cm}p{3cm}p{5cm}@{}}
+\toprule
+\textbf{Variant Entities} & \textbf{Canonical Form} & \textbf{Aliases Tracked} \\
+\midrule
+source code, Source Code, source code files, code base, source code repository & Source Code & code base, source code repository \\
+\midrule
+Licensor, Company, ABC Corp, the Provider, Vendor & ABC Corp (Licensor) & Company, Provider, Vendor \\
+\midrule
+must provide, shall provide, will provide, obligated to provide, required to provide & must\_provide & shall provide, obligated to provide \\
+\midrule
+exclusive license, exclusive right, sole license & exclusive license & sole license \\
+\bottomrule
+\end{tabular}
+\end{table}
+
+\subsubsection{Edge Resolution}
+
+The same five-step process applies to relations (edges). Example edge resolution:
+
+\begin{table}[H]
+\centering
+\caption{Relation Resolution Examples}
+\small
+\begin{tabular}{@{}p{6cm}p{3cm}@{}}
+\toprule
+\textbf{Variant Relations} & \textbf{Canonical Form} \\
+\midrule
+owns, has ownership of, possesses all rights to, holds exclusive rights to & owns \\
+\midrule
+cannot compete, may not compete, restricted from competing, prohibited from competing & cannot\_compete \\
+\midrule
+governed by law of, subject to laws of, interpreted under law of, controlled by laws of & governed\_by \\
+\midrule
+licenses to, grants license to, provides license to, conveys license to & licenses\_to \\
+\bottomrule
+\end{tabular}
+\end{table}
+
+\noindent\fbox{\parbox{\textwidth}{\textbf{Important:} 
+\textbf{Legal Significance Preservation:} The resolution process must distinguish:
+\begin{itemize}
+    \item SHALL (mandatory) vs MAY (optional) vs SHOULD (recommended)
+    \item IF...THEN (conditional) vs unconditional relationships
+    \item BEFORE, AFTER, DURING (temporal sequence)
+    \item EXCLUSIVE vs NON-EXCLUSIVE vs LIMITED vs UNLIMITED (scope modifiers)
+\end{itemize}
+}}
+
+\subsubsection{Resolution Output}
+
+\begin{table}[H]
+\centering
+\caption{Expected Resolution Results (510 Contracts)}
+\begin{tabular}{@{}lll@{}}
+\toprule
+\textbf{Metric} & \textbf{Before Resolution} & \textbf{After Resolution} \\
+\midrule
+Unique entities & 15,000 & 8,000 (47\% reduction) \\
+Unique relations & 800 & 150 (81\% reduction) \\
+Total triples & 75,000 & 75,000 (preserved) \\
+Alias mappings & --- & 10,000+ \\
+\bottomrule
+\end{tabular}
+\end{table}
+
+\subsubsection{Quality Metrics}
+
+\begin{itemize}
+    \item \textbf{Triple validity:} Target 98\% (manual validation of 100 random triples)
+    \item \textbf{Cluster quality:} Silhouette score $>$ 0.6 for clustering effectiveness
+    \item \textbf{Canonicalization consistency:} Inter-rater agreement $>$ 90\% between LLM and human lawyer
+\end{itemize}
+
+\subsubsection{Performance Targets}
+
+\begin{itemize}
+    \item \textbf{Processing time:} Resolve 50,000--100,000 triples in under 1 hour
+    \item \textbf{LLM optimization:} Batch API calls to minimize latency and cost
+    \item \textbf{Parallelization:} Process 128 clusters concurrently using multiprocessing
+\end{itemize}
+
+\subsection{Knowledge Graph Storage}
+
+\subsubsection{Database Selection}
+
+\begin{table}[H]
+\centering
+\caption{Graph Database Options}
+\small
+\begin{tabular}{@{}p{2.5cm}p{3cm}p{3.5cm}p{3.5cm}@{}}
+\toprule
+\textbf{Database} & \textbf{Type} & \textbf{Pros} & \textbf{Cons} \\
+\midrule
+Neo4j & Property Graph & Native graph storage, Cypher query language, excellent visualization & Commercial license for production \\
+\midrule
+NetworkX + PostgreSQL & Hybrid & Python native, flexible, open source, good for prototyping & Not optimized for large graphs \\
+\midrule
+GraphDB (RDF) & Triple Store & Standards-based (RDF, SPARQL), reasoning capabilities & Steeper learning curve \\
+\bottomrule
+\end{tabular}
+\end{table}
+
+\textbf{Recommendation:} Neo4j for production (scalability, maturity, tooling), NetworkX + PostgreSQL for development and prototyping.
+
+\subsubsection{Schema Implementation}
+
+\paragraph{Node Labels:}
+\begin{itemize}
+    \item Party
+    \item IPAsset
+    \item Obligation
+    \item Restriction
+    \item LiabilityProvision
+    \item Temporal
+    \item Jurisdiction
+    \item ContractClause
+    \item Contract
+\end{itemize}
+
+\paragraph{Relationship Types:}
+\begin{itemize}
+    \item LICENSES\_TO
+    \item OWNS
+    \item ASSIGNS
+    \item HAS\_OBLIGATION
+    \item SUBJECT\_TO\_RESTRICTION
+    \item HAS\_LIABILITY
+    \item GOVERNED\_BY
+    \item CONTAINS\_CLAUSE
+    \item EFFECTIVE\_ON
+    \item TERMINATES\_ON
+\end{itemize}
+
+\paragraph{Properties:}
+
+All nodes and edges include:
+\begin{itemize}
+    \item \texttt{id}: Unique identifier
+    \item \texttt{name}: Human-readable name
+    \item \texttt{type}: Entity/relation type
+    \item \texttt{source\_contract\_id}: Provenance tracking (which contract(s) generated this)
+    \item \texttt{cuad\_label}: CUAD annotation category if applicable
+    \item \texttt{confidence\_score}: LLM extraction confidence
+    \item \texttt{properties}: Flexible JSON field for additional attributes
+\end{itemize}
+
+\subsubsection{Indexing Strategy}
+
+\begin{enumerate}
+    \item \textbf{Full-text search:} Index all node names and properties for BM25 keyword search
+    \item \textbf{Semantic search:} Store embeddings (S-BERT, all-MiniLM-L6-v2) for all nodes using FAISS vector index
+    \item \textbf{CUAD label index:} Fast filtering by CUAD category
+    \item \textbf{Contract ID index:} Fast provenance lookup (``show me all triples from Contract X'')
+\end{enumerate}
+
+\subsection{LLM Integration Layer}
+
+\subsubsection{Purpose}
+
+Provide structured knowledge graph context to LLMs for natural language contract analysis queries.
+
+\begin{figure}[H]
+\centering
+\includegraphics[width=0.9\textwidth]{llm_retrieval_mechanism.png}
+\caption{LLM Retrieval Mechanism: Hybrid search with subgraph expansion for context-aware contract analysis}
+\label{fig:llm_retrieval}
+\end{figure}
+
+\subsubsection{Query Processing Pipeline}
+
+\paragraph{Step 1: Query Embedding}
+\begin{itemize}
+    \item Model: all-MiniLM-L6-v2 (same as KGGen evaluation for consistency)
+    \item Input: User's natural language question
+    \item Output: 384-dimensional embedding vector
+\end{itemize}
+
+\paragraph{Step 2: Hybrid Retrieval}
+
+Combine keyword and semantic search:
+
+\begin{equation}
+\text{score}(q, t) = 0.5 \times \text{BM25}(q, t) + 0.5 \times \text{cosine\_sim}(\text{embed}(q), \text{embed}(t))
+\end{equation}
+
+where:
+\begin{itemize}
+    \item $q$ = user query
+    \item $t$ = knowledge graph triple
+    \item BM25 = keyword matching score
+    \item cosine\_sim = semantic similarity score
+\end{itemize}
+
+\begin{itemize}
+    \item \textbf{Top-K:} Retrieve 10 most relevant triples
+    \item \textbf{Search space:} All nodes and edges in knowledge graph
+    \item \textbf{Weighting:} Equal weight (0.5 BM25, 0.5 semantic) as validated in KGGen paper
+\end{itemize}
+
+\paragraph{Step 3: Subgraph Expansion}
+
+Enable multi-hop reasoning by expanding to neighboring nodes:
+
+\begin{itemize}
+    \item \textbf{Expansion depth:} 2-hop neighbors
+    \item \textbf{Rationale:} Most legal queries require 1--2 relationship hops (e.g., Party $\rightarrow$ License $\rightarrow$ IPAsset $\rightarrow$ Restrictions)
+    \item \textbf{Expansion size:} Add approximately 10 additional triples (total ~20 triples)
+    \item \textbf{Pruning:} Remove low-relevance nodes outside main subgraph to maintain focus
+\end{itemize}
+
+\paragraph{Step 4: Context Enrichment}
+
+Augment knowledge graph triples with additional context:
+
+\begin{itemize}
+    \item \textbf{Original contract text:} Retrieve original text chunks from source contracts for each triple
+    \item \textbf{CUAD labels:} Include CUAD annotation category for each triple
+    \item \textbf{Metadata:} Add contract type, jurisdiction, dates, parties
+    \item \textbf{Statistics:} Include triple frequency (``This clause appears in 73\% of similar contracts'')
+\end{itemize}
+
+\paragraph{Step 5: Context Formatting}
+
+Format retrieved information for LLM consumption:
+
+\begin{verbatim}% Caption: LLM Context Template]
+# Contract Knowledge Graph Context
+
+## Relevant Entities and Relationships
+
+- (ABC Corp) --[licenses_to]--> (XYZ Inc)
+  Properties: {type: exclusive, scope: worldwide,
+               field: software development}
+  Source: Contract ID ABC-2023-001, Section 2.1
+  CUAD Label: License_Grant
+
+- (ABC Corp) --[assigns]--> (Source Code)
+  Properties: {assignment: full ownership,
+               effective: upon final payment}
+  Source: Contract ID ABC-2023-001, Section 3.2
+  CUAD Label: IP_Ownership_Assignment
+
+- (Source Code) --[subject_to_restriction]-->
+    (No Open Source Usage)
+  Properties: {scope: development,
+               prohibition: GPL/copyleft licenses}
+  Source: Contract ID ABC-2023-001, Section 3.4
+  CUAD Label: License_Grant
+
+## Original Contract Text
+
+Section 2.1 License Grant: "ABC Corp hereby grants to
+XYZ Inc an exclusive, worldwide license to use, modify,
+and distribute the Licensed Software for purposes of
+software development..."
+
+Section 3.2 IP Assignment: "Upon receipt of final payment,
+ABC Corp assigns all rights, title, and interest in the
+Source Code to XYZ Inc..."
+
+## Query
+
+What IP rights does the licensee receive in the ABC Corp
+software license agreement?
+
+## Instructions
+
+Answer the query based on the knowledge graph and contract
+text. Be precise and cite specific clauses. If the
+information is not in the provided context, state that
+clearly.
+\end{verbatim}
+
+\paragraph{Step 6: LLM Generation}
+
+\begin{itemize}
+    \item \textbf{Model:} Claude Sonnet 3.5 (primary) or GPT-4o
+    \item \textbf{Temperature:} 0.0 (deterministic for legal analysis)
+    \item \textbf{Max tokens:} 1000
+    \item \textbf{System prompt:} ``You are a legal contract analysis assistant. Provide accurate, precise answers based on the knowledge graph and contract text. Always cite specific clauses and explain your reasoning. If information is not in the context, say so explicitly.''
+\end{itemize}
+
+\subsubsection{API Endpoints}
+
+\begin{table}[H]
+\centering
+\caption{REST API Endpoints}
+\small
+\begin{tabular}{@{}p{3cm}p{1.5cm}p{8cm}@{}}
+\toprule
+\textbf{Endpoint} & \textbf{Method} & \textbf{Description} \\
+\midrule
+/api/v1/query & POST & Natural language Q\&A with knowledge graph context \\
+\midrule
+/api/v1/graph/search & POST & Search knowledge graph, return relevant subgraph \\
+\midrule
+/api/v1/graph/entity/\{id\} & GET & Get entity details with all relationships \\
+\midrule
+/api/v1/contracts/\{id\}/graph & GET & Get complete knowledge graph for specific contract \\
+\bottomrule
+\end{tabular}
+\end{table}
+
+\newpage
+
+% Ontology Specifications
+\section{Ontology Specifications}
+
+\subsection{Overview}
+
+The legal contract ontology defines the structure of entities and relationships extracted from CUAD technology agreements. The ontology design balances three competing requirements:
+
+\begin{enumerate}
+    \item \textbf{Legal precision:} Capture legally significant distinctions and nuances
+    \item \textbf{Computational tractability:} Enable efficient graph operations and queries
+    \item \textbf{Common law alignment:} Respect contract interpretation principles from US/UK/Commonwealth jurisdictions
+\end{enumerate}
+
+\subsection{Entity Types (Nodes)}
+
+\begin{figure}[H]
+\centering
+\includegraphics[width=0.9\textwidth]{contract_kg_schema.png}
+\caption{Contract Knowledge Graph Schema: Entity types and relationship structure}
+\label{fig:kg_schema}
+\end{figure}
+
+\subsubsection{1. Party}
+
+\paragraph{Definition:} Legal entities that are parties to the contract.
+
+\paragraph{Attributes:}
+\begin{itemize}
+    \item \texttt{legal\_name}: Official registered name
+    \item \texttt{role}: licensor, licensee, vendor, customer, contractor, client, etc.
+    \item \texttt{entity\_type}: corporation, LLC, partnership, individual
+    \item \texttt{jurisdiction}: State/country of incorporation
+    \item \texttt{address}: Legal address
+\end{itemize}
+
+\paragraph{Examples:}
+\begin{itemize}
+    \item ABC Corporation (Licensor)
+    \item XYZ Inc (Licensee)
+    \item John Doe (Independent Contractor)
+\end{itemize}
+
+\subsubsection{2. IPAsset}
+
+\paragraph{Definition:} Intellectual property assets subject to contract terms.
+
+\paragraph{Subtypes:}
+\begin{itemize}
+    \item Patent
+    \item Copyright (Software, Documentation, Content)
+    \item Trademark
+    \item Trade Secret
+    \item Source Code
+    \item Know-How
+\end{itemize}
+
+\paragraph{Attributes:}
+\begin{itemize}
+    \item \texttt{ip\_type}: patent, copyright, trademark, trade\_secret, source\_code
+    \item \texttt{description}: Detailed description of IP asset
+    \item \texttt{registration\_number}: Patent/trademark number if registered
+    \item \texttt{jurisdiction}: Country/region of IP protection
+\end{itemize}
+
+\paragraph{Examples:}
+\begin{itemize}
+    \item Source Code for Customer Relationship Management System
+    \item US Patent 10,123,456 for Data Encryption Method
+    \item ABC Software trademark
+\end{itemize}
+
+\subsubsection{3. Obligation}
+
+\paragraph{Definition:} Performance obligations or deliverables required under the contract.
+
+\paragraph{Attributes:}
+\begin{itemize}
+    \item \texttt{description}: What must be provided/performed
+    \item \texttt{deadline}: Due date or timeline
+    \item \texttt{conditions}: Any conditions triggering obligation
+    \item \texttt{modality}: SHALL (mandatory), SHOULD (recommended), MAY (optional)
+\end{itemize}
+
+\paragraph{Examples:}
+\begin{itemize}
+    \item Provide technical support within 24 hours
+    \item Deliver source code within 30 days of final payment
+    \item Maintain 99.9\% uptime
+\end{itemize}
+
+\subsubsection{4. Restriction}
+
+\paragraph{Definition:} Prohibitions or limitations on party actions.
+
+\paragraph{Subtypes:}
+\begin{itemize}
+    \item Non-compete
+    \item Non-disclosure (confidentiality)
+    \item Non-solicitation (employees/customers)
+    \item Usage restrictions
+    \item Transfer restrictions
+\end{itemize}
+
+\paragraph{Attributes:}
+\begin{itemize}
+    \item \texttt{restriction\_type}: non\_compete, non\_disclosure, non\_solicitation, usage, transfer
+    \item \texttt{scope}: What is restricted
+    \item \texttt{duration}: How long restriction applies
+    \item \texttt{geography}: Geographic limitation if any
+    \item \texttt{exceptions}: Any exceptions to restriction
+\end{itemize}
+
+\paragraph{Examples:}
+\begin{itemize}
+    \item Non-compete in same market for 2 years in California
+    \item Confidentiality obligation for 5 years post-termination
+    \item No reverse engineering of software
+\end{itemize}
+
+\subsubsection{5. LiabilityProvision}
+
+\paragraph{Definition:} Clauses allocating liability, providing indemnity, or limiting damages.
+
+\paragraph{Subtypes:}
+\begin{itemize}
+    \item Liability cap
+    \item Liability exclusion
+    \item Indemnification
+    \item Warranty
+    \item Disclaimer
+\end{itemize}
+
+\paragraph{Attributes:}
+\begin{itemize}
+    \item \texttt{provision\_type}: cap, exclusion, indemnity, warranty, disclaimer
+    \item \texttt{amount}: Financial cap if applicable
+    \item \texttt{scope}: What is covered (direct damages, consequential damages, etc.)
+    \item \texttt{exceptions}: Exclusions from cap (IP infringement, willful misconduct, etc.)
+\end{itemize}
+
+\paragraph{Examples:}
+\begin{itemize}
+    \item Liability capped at \$1,000,000 for direct damages
+    \item No liability for consequential damages
+    \item Indemnification for third-party IP claims
+\end{itemize}
+
+\subsubsection{6. Temporal}
+
+\paragraph{Definition:} Time-related terms including dates, durations, and deadlines.
+
+\paragraph{Attributes:}
+\begin{itemize}
+    \item \texttt{temporal\_type}: effective\_date, expiration\_date, renewal\_date, notice\_period, deadline
+    \item \texttt{date}: Specific date (ISO 8601 format)
+    \item \texttt{duration}: Time period (e.g., ``2 years'', ``30 days'')
+    \item \texttt{trigger}: Event triggering temporal element
+\end{itemize}
+
+\paragraph{Examples:}
+\begin{itemize}
+    \item Effective Date: January 1, 2024
+    \item Expiration Date: December 31, 2026
+    \item Renewal Term: 1 year, automatic unless 60 days notice
+\end{itemize}
+
+\subsubsection{7. Jurisdiction}
+
+\paragraph{Definition:} Governing law and venue provisions.
+
+\paragraph{Attributes:}
+\begin{itemize}
+    \item \texttt{governing\_law}: State/country law that governs contract
+    \item \texttt{legal\_system}: common\_law, civil\_law
+    \item \texttt{venue}: Court location for disputes
+    \item \texttt{arbitration}: Whether arbitration required
+\end{itemize}
+
+\paragraph{Examples:}
+\begin{itemize}
+    \item Governed by laws of California, US (common law system)
+    \item Venue: Santa Clara County Superior Court
+    \item Arbitration in San Francisco under AAA rules
+\end{itemize}
+
+\subsubsection{8. ContractClause}
+
+\paragraph{Definition:} Named contract provisions or sections.
+
+\paragraph{Attributes:}
+\begin{itemize}
+    \item \texttt{clause\_name}: Title of clause
+    \item \texttt{clause\_number}: Section number
+    \item \texttt{cuad\_label}: CUAD category
+    \item \texttt{text}: Full text of clause
+\end{itemize}
+
+\paragraph{Examples:}
+\begin{itemize}
+    \item Section 2.1: License Grant
+    \item Section 8.3: Limitation of Liability
+    \item Section 12: Governing Law
+\end{itemize}
+
+\subsection{Relationship Types (Edges)}
+
+\subsubsection{1. LICENSES\_TO}
+
+\paragraph{Definition:} Grant of license from licensor to licensee.
+
+\paragraph{Domain:} Party $\rightarrow$ Party or Party $\rightarrow$ IPAsset
+
+\paragraph{Properties:}
+\begin{itemize}
+    \item \texttt{license\_type}: exclusive, non-exclusive, sole
+    \item \texttt{scope}: worldwide, limited territory, specific use
+    \item \texttt{transferable}: true/false
+    \item \texttt{sublicensable}: true/false
+    \item \texttt{field\_of\_use}: Permitted uses
+\end{itemize}
+
+\paragraph{Example:} (ABC Corp) --[LICENSES\_TO: \{type: exclusive, scope: worldwide\}]--> (XYZ Inc)
+
+\subsubsection{2. OWNS}
+
+\paragraph{Definition:} Ownership of intellectual property or assets.
+
+\paragraph{Domain:} Party $\rightarrow$ IPAsset
+
+\paragraph{Properties:}
+\begin{itemize}
+    \item \texttt{ownership\_type}: full, joint, partial
+    \item \texttt{rights\_included}: reproduction, distribution, modification, etc.
+\end{itemize}
+
+\paragraph{Example:} (ABC Corp) --[OWNS: \{type: full\}]--> (Source Code)
+
+\subsubsection{3. ASSIGNS}
+
+\paragraph{Definition:} Transfer of ownership or rights from one party to another.
+
+\paragraph{Domain:} Party $\rightarrow$ IPAsset or Party $\rightarrow$ Contract
+
+\paragraph{Properties:}
+\begin{itemize}
+    \item \texttt{assignment\_type}: full, partial, conditional
+    \item \texttt{effective\_trigger}: upon\_payment, upon\_delivery, immediately
+    \item \texttt{consideration}: Payment or other consideration
+\end{itemize}
+
+\paragraph{Example:} (Contractor) --[ASSIGNS: \{type: full, effective: upon\_final\_payment\}]--> (Work Product)
+
+\subsubsection{4. HAS\_OBLIGATION}
+
+\paragraph{Definition:} Party has obligation to perform or deliver.
+
+\paragraph{Domain:} Party $\rightarrow$ Obligation
+
+\paragraph{Properties:}
+\begin{itemize}
+    \item \texttt{modality}: SHALL, SHOULD, MAY
+    \item \texttt{deadline}: Due date
+    \item \texttt{conditions}: Triggering conditions
+\end{itemize}
+
+\paragraph{Example:} (Vendor) --[HAS\_OBLIGATION: \{modality: SHALL, deadline: 2024-03-01\}]--> (Deliver Software)
+
+\subsubsection{5. SUBJECT\_TO\_RESTRICTION}
+
+\paragraph{Definition:} Party is subject to prohibition or limitation.
+
+\paragraph{Domain:} Party $\rightarrow$ Restriction
+
+\paragraph{Properties:}
+\begin{itemize}
+    \item \texttt{duration}: Time period
+    \item \texttt{geography}: Geographic scope
+    \item \texttt{scope}: What is restricted
+\end{itemize}
+
+\paragraph{Example:} (Employee) --[SUBJECT\_TO\_RESTRICTION: \{duration: 2\_years, geography: California\}]--> (Non-Compete)
+
+\subsubsection{6. HAS\_LIABILITY}
+
+\paragraph{Definition:} Party has liability under specified provision.
+
+\paragraph{Domain:} Party $\rightarrow$ LiabilityProvision
+
+\paragraph{Properties:}
+\begin{itemize}
+    \item \texttt{cap\_amount}: Financial limit if any
+    \item \texttt{scope}: direct\_damages, indirect\_damages, all\_damages
+    \item \texttt{exceptions}: Exclusions from cap
+\end{itemize}
+
+\paragraph{Example:} (Vendor) --[HAS\_LIABILITY: \{cap: \$1000000, scope: direct\_damages, exceptions: [IP\_infringement]\}]--> (Liability Cap)
+
+\subsubsection{7. GOVERNED\_BY}
+
+\paragraph{Definition:} Contract is governed by specified jurisdiction's law.
+
+\paragraph{Domain:} Contract $\rightarrow$ Jurisdiction
+
+\paragraph{Properties:}
+\begin{itemize}
+    \item \texttt{legal\_system}: common\_law, civil\_law
+    \item \texttt{venue}: Court location
+    \item \texttt{conflict\_of\_laws}: Choice of law rules
+\end{itemize}
+
+\paragraph{Example:} (License Agreement) --[GOVERNED\_BY: \{system: common\_law, venue: Santa Clara County\}]--> (California)
+
+\subsubsection{8. EFFECTIVE\_ON}
+
+\paragraph{Definition:} Contract or provision becomes effective on specified date.
+
+\paragraph{Domain:} Contract $\rightarrow$ Temporal or ContractClause $\rightarrow$ Temporal
+
+\paragraph{Properties:}
+\begin{itemize}
+    \item \texttt{date}: Effective date
+    \item \texttt{trigger}: Triggering event if conditional
+\end{itemize}
+
+\paragraph{Example:} (Agreement) --[EFFECTIVE\_ON: \{date: 2024-01-01\}]--> (Effective Date)
+
+\subsubsection{9. TERMINATES\_ON}
+
+\paragraph{Definition:} Contract or provision terminates on specified date or condition.
+
+\paragraph{Domain:} Contract $\rightarrow$ Temporal
+
+\paragraph{Properties:}
+\begin{itemize}
+    \item \texttt{date}: Expiration date if fixed
+    \item \texttt{trigger}: Termination trigger (breach, convenience, etc.)
+    \item \texttt{notice\_period}: Required notice for termination
+\end{itemize}
+
+\paragraph{Example:} (Agreement) --[TERMINATES\_ON: \{date: 2026-12-31, notice: 60\_days\}]--> (Expiration Date)
+
+\subsubsection{10. CONTAINS\_CLAUSE}
+
+\paragraph{Definition:} Contract contains specific clause or provision.
+
+\paragraph{Domain:} Contract $\rightarrow$ ContractClause
+
+\paragraph{Properties:}
+\begin{itemize}
+    \item \texttt{clause\_number}: Section number
+    \item \texttt{cuad\_label}: CUAD category
+\end{itemize}
+
+\paragraph{Example:} (License Agreement) --[CONTAINS\_CLAUSE: \{number: ``2.1'', cuad\_label: ``License\_Grant''\}]--> (License Grant Clause)
+
+\subsection{Common Law Alignment}
+
+\subsubsection{Key Principles Embedded in Ontology}
+
+\begin{enumerate}
+    \item \textbf{Plain Meaning Rule:} Canonical entity names use clear, plain legal terminology as understood by reasonable legal practitioners
+
+    \item \textbf{Business Efficacy:} Relations model business relationships (licenses, obligations, assignments) rather than just textual patterns
+
+    \item \textbf{Contextual Interpretation:} Extraction uses full contract context, not isolated clauses, to determine entity and relation semantics
+
+    \item \textbf{Defined Terms:} Preserve contract-specific defined terms (capitalized terms) as distinct entities when legally significant
+
+    \item \textbf{Legal Modality:} Distinguish SHALL (mandatory) vs MAY (optional) vs SHOULD (recommended) in obligations
+\end{enumerate}
+
+\subsubsection{Jurisdictional Tagging}
+
+All contracts are tagged with jurisdiction metadata:
+
+\begin{itemize}
+    \item \texttt{governing\_law}: California, Delaware, New York, UK, etc.
+    \item \texttt{legal\_system}: common\_law or civil\_law
+    \item \texttt{jurisdiction\_notes}: Special legal considerations
+\end{itemize}
+
+This enables jurisdiction-specific analysis and prevents inappropriate cross-jurisdiction reasoning.
+
+\newpage
+
+% Technical Implementation Plan
+\section{Technical Implementation Plan}
+
+\subsection{Development Roadmap}
+
+The implementation follows a four-phase approach spanning 16--20 weeks from prototype to production deployment.
+
+\subsection{Phase 1: Prototype (4--6 weeks)}
+
+\subsubsection{Goals}
+
+\begin{itemize}
+    \item Validate KGGen methodology on CUAD dataset
+    \item Build minimal viable pipeline (Extraction $\rightarrow$ Aggregation $\rightarrow$ Resolution)
+    \item Demonstrate value with sample use cases
+    \item Establish quality baselines
+\end{itemize}
+
+\subsubsection{Week-by-Week Plan}
+
+\paragraph{Week 1: Environment Setup and Data Exploration}
+\begin{itemize}
+    \item Set up Python 3.11+ development environment
+    \item Install dependencies: DSPy, anthropic, openai, sentence-transformers, networkx, pandas
+    \item Download CUAD dataset (510 contracts + annotations)
+    \item Explore contract structure and CUAD label distribution
+    \item Extract text from 10 sample contracts
+\end{itemize}
+
+\paragraph{Week 2: Stage 1 Extraction Implementation}
+\begin{itemize}
+    \item Implement two-step extraction pipeline (entities $\rightarrow$ relations)
+    \item Configure Claude Sonnet 3.5 API with DSPy
+    \item Create extraction prompts with legal constraints
+    \item Process 10 sample contracts
+    \item Validate output against CUAD annotations
+\end{itemize}
+
+\paragraph{Week 3: Stage 2 \& 3 Implementation}
+\begin{itemize}
+    \item Implement aggregation logic (normalization, deduplication)
+    \item Implement basic resolution (clustering + LLM canonicalization)
+    \item Process 10-contract knowledge graph through full pipeline
+    \item Store in NetworkX + JSON for prototyping
+\end{itemize}
+
+\paragraph{Week 4: Query Interface Development}
+\begin{itemize}
+    \item Implement hybrid retrieval (BM25 + semantic search)
+    \item Build subgraph expansion logic (2-hop neighbors)
+    \item Create LLM context formatting
+    \item Develop simple CLI for contract Q\&A
+    \item Test on 10 sample queries
+\end{itemize}
+
+\paragraph{Week 5: Evaluation and Quality Assessment}
+\begin{itemize}
+    \item Manual validation: Review 100 random triples for validity (target 90\%+)
+    \item MINE-1 evaluation: Run on subset of contracts
+    \item Accuracy assessment: Compare entity extraction against CUAD annotations
+    \item Document quality metrics and identify failure modes
+\end{itemize}
+
+\paragraph{Week 6: Iteration and Refinement}
+\begin{itemize}
+    \item Refine extraction prompts based on errors
+    \item Improve resolution logic for legal term handling
+    \item Expand to 50 contracts
+    \item Prepare demonstration for stakeholders
+\end{itemize}
+
+\subsubsection{Phase 1 Deliverables}
+
+\begin{itemize}
+    \item Working extraction pipeline processing CUAD contracts
+    \item Knowledge graph with 50+ contracts (5,000--10,000 triples)
+    \item Basic query interface (CLI or simple web UI)
+    \item Quality metrics report: triple validity, MINE-1 score, extraction accuracy
+    \item Technical documentation
+\end{itemize}
+
+\subsubsection{Success Criteria}
+
+\begin{itemize}
+    \item Extract knowledge graphs from 50+ contracts successfully
+    \item Achieve 90\%+ triple validity
+    \item Answer 10 sample queries correctly with proper citations
+    \item Demonstrate value to stakeholders (engineers + lawyers)
+\end{itemize}
+
+\subsection{Phase 2: Scale and Optimize (6--8 weeks)}
+
+\subsubsection{Goals}
+
+\begin{itemize}
+    \item Process full CUAD dataset (510 contracts)
+    \item Optimize performance and reduce costs
+    \item Enhance extraction quality to 98\% target
+    \item Build production-grade REST API
+\end{itemize}
+
+\subsubsection{Milestones}
+
+\paragraph{Weeks 1--2: Full Dataset Processing}
+\begin{itemize}
+    \item Scale extraction to all 510 CUAD contracts
+    \item Implement parallel processing for throughput
+    \item Handle edge cases and extraction failures gracefully
+    \item Estimated output: 50,000--100,000 triples
+\end{itemize}
+
+\paragraph{Weeks 3--4: Resolution Optimization}
+\begin{itemize}
+    \item Optimize clustering algorithm (parallelization, caching)
+    \item Batch LLM API calls to reduce latency
+    \item Implement incremental resolution for new contracts
+    \item Target: Resolve 50K--100K triples in under 1 hour
+\end{itemize}
+
+\paragraph{Week 5: Advanced Query Features}
+\begin{itemize}
+    \item Implement filters (by contract type, jurisdiction, date range)
+    \item Add aggregation queries (``Show all non-compete durations'')
+    \item Support comparison queries (``Compare license terms across 50 contracts'')
+    \item Enhance context enrichment with statistics
+\end{itemize}
+
+\paragraph{Week 6: REST API Development}
+\begin{itemize}
+    \item Build FastAPI-based REST API
+    \item Implement 4 core endpoints: /query, /graph/search, /graph/entity, /contracts/\{id\}/graph
+    \item Add authentication (API key-based)
+    \item Implement rate limiting and caching
+\end{itemize}
+
+\paragraph{Week 7: Comprehensive Evaluation}
+\begin{itemize}
+    \item Manual validation: 100 random triples, target 98\% validity
+    \item MINE-1 evaluation on full dataset, target 65\%+
+    \item MINE-2 evaluation (multi-hop reasoning)
+    \item Query accuracy: 50 test queries evaluated by lawyers
+    \item Performance benchmarks: extraction throughput, query latency
+\end{itemize}
+
+\paragraph{Week 8: Bug Fixes and Performance Tuning}
+\begin{itemize}
+    \item Address issues identified in evaluation
+    \item Optimize query latency (target <500ms)
+    \item Reduce LLM API costs through caching and batching
+    \item Prepare for production deployment
+\end{itemize}
+
+\subsubsection{Phase 2 Deliverables}
+
+\begin{itemize}
+    \item Complete knowledge graph: 510 contracts, 50K--100K triples
+    \item Production-grade REST API with documentation
+    \item Comprehensive evaluation report with quality metrics
+    \item Performance benchmarks and optimization recommendations
+    \item Deployment-ready codebase
+\end{itemize}
+
+\subsubsection{Success Criteria}
+
+\begin{itemize}
+    \item Process all 510 contracts successfully (100\% coverage)
+    \item Achieve 98\% triple validity (validated on random sample)
+    \item MINE-1 score 65\%+ (information retention)
+    \item Query latency <500ms for 90\% of queries
+    \item API throughput 100+ requests per second
+\end{itemize}
+
+\subsection{Phase 3: Product Integration (4--6 weeks)}
+
+\subsubsection{Goals}
+
+\begin{itemize}
+    \item Integrate with user-facing application
+    \item Develop 5 target use cases
+    \item User testing with legal practitioners
+    \item Production deployment with monitoring
+\end{itemize}
+
+\subsubsection{Milestones}
+
+\paragraph{Week 1: User Interface Design}
+\begin{itemize}
+    \item Design web application for contract analysis
+    \item Create mockups for Q\&A, risk dashboard, comparison views
+    \item User flow design for common tasks
+    \item Collaborate with lawyers on UI requirements
+\end{itemize}
+
+\paragraph{Week 2: Contract Q\&A Feature}
+\begin{itemize}
+    \item Implement natural language query interface
+    \item Display answers with knowledge graph visualizations
+    \item Show source citations with contract links
+    \item Add confidence scores and explanations
+\end{itemize}
+
+\paragraph{Week 3: Risk Analysis Dashboard}
+\begin{itemize}
+    \item Implement risk detection queries (uncapped liability, long non-competes, etc.)
+    \item Create visualization of risks across portfolio
+    \item Generate risk reports with recommendations
+\end{itemize}
+
+\paragraph{Week 4: Comparison and Compliance Features}
+\begin{itemize}
+    \item Implement side-by-side contract comparison
+    \item Build compliance verification against policies
+    \item Create export functionality (PDF reports, CSV data)
+\end{itemize}
+
+\paragraph{Week 5: User Testing}
+\begin{itemize}
+    \item Recruit 5--10 legal practitioners for user testing
+    \item Collect feedback on accuracy, usability, value
+    \item Measure time savings on test contract review tasks
+    \item Iterate based on feedback
+\end{itemize}
+
+\paragraph{Week 6: Production Deployment}
+\begin{itemize}
+    \item Deploy to production infrastructure (cloud VM or Kubernetes)
+    \item Set up Neo4j production database
+    \item Configure monitoring (Prometheus + Grafana)
+    \item Implement alerting for critical failures
+    \item Create deployment documentation
+\end{itemize}
+
+\subsubsection{Phase 3 Deliverables}
+
+\begin{itemize}
+    \item Web application for contract analysis
+    \item User documentation and video tutorials
+    \item Deployment guide for production infrastructure
+    \item Monitoring and alerting system
+    \item User testing report with feedback
+\end{itemize}
+
+\subsubsection{Success Criteria}
+
+\begin{itemize}
+    \item Positive user feedback from legal practitioners (4/5+ satisfaction)
+    \item Demonstrate 50\% time savings in contract review tasks
+    \item Successful production deployment
+    \item 99.9\% uptime in first month of operation
+\end{itemize}
+
+\subsection{Phase 4: Enhancement and Expansion (Ongoing)}
+
+\subsubsection{Areas for Continuous Improvement}
+
+\begin{enumerate}
+    \item \textbf{Ontology Expansion}
+    \begin{itemize}
+        \item Add more contract types beyond technology focus
+        \item Expand clause categories beyond 41 CUAD labels
+        \item Include financial terms, payment schedules
+    \end{itemize}
+
+    \item \textbf{Common Law Reasoning}
+    \begin{itemize}
+        \item Incorporate case law and legal precedents
+        \item Link contract clauses to relevant court decisions
+        \item Enable reasoning about legal interpretations
+    \end{itemize}
+
+    \item \textbf{Multi-Jurisdiction Support}
+    \begin{itemize}
+        \item Extend beyond US to UK, Canada, Australia
+        \item Add civil law systems (EU, Latin America)
+        \item Jurisdiction-specific interpretation rules
+    \end{itemize}
+
+    \item \textbf{Advanced Analytics}
+    \begin{itemize}
+        \item Trend analysis: How contract terms evolve over time
+        \item Risk scoring: Quantitative risk assessment
+        \item Negotiation insights: Market norms and outliers
+    \end{itemize}
+
+    \item \textbf{System Integration}
+    \begin{itemize}
+        \item Connect to document management systems (SharePoint, Box)
+        \item Integrate with CRMs (Salesforce, HubSpot)
+        \item API integration with legal research tools
+    \end{itemize}
+
+    \item \textbf{Model Improvement}
+    \begin{itemize}
+        \item Fine-tune LLMs on legal contract corpus
+        \item Train custom entity extraction models
+        \item Develop contract-specific embeddings
+    \end{itemize}
+
+    \item \textbf{User Feedback Loop}
+    \begin{itemize}
+        \item Collect corrections from lawyers
+        \item Active learning to improve extraction
+        \item Continuous quality monitoring
+    \end{itemize}
+\end{enumerate}
+
+\subsection{Technology Stack}
+
+\begin{table}[H]
+\centering
+\caption{Complete Technology Stack}
+\small
+\begin{tabular}{@{}p{3.5cm}p{4cm}p{5cm}@{}}
+\toprule
+\textbf{Component} & \textbf{Technology} & \textbf{Rationale} \\
+\midrule
+Programming Language & Python 3.11+ & Ecosystem for NLP, ML, graph processing \\
+\midrule
+LLM Orchestration & DSPy & Structured outputs, multi-model support \\
+\midrule
+LLM Provider (Primary) & Claude Sonnet 3.5 & 73\% MINE-1 score, best for legal reasoning \\
+\midrule
+LLM Provider (Fallback) & GPT-4o & 66\% MINE-1, reliable fallback \\
+\midrule
+Embedding Model & all-MiniLM-L6-v2 & Fast, good quality, matches KGGen benchmark \\
+\midrule
+Clustering & S-BERT + K-means & Effective semantic clustering \\
+\midrule
+Graph Database (Prod) & Neo4j 5.x & Industry standard, Cypher, visualization \\
+\midrule
+Graph Database (Dev) & NetworkX + PostgreSQL & Python native, prototyping \\
+\midrule
+Search Engine & rank-bm25 + FAISS & Hybrid keyword + semantic search \\
+\midrule
+Web Framework & FastAPI & Async support, auto-documentation, modern \\
+\midrule
+Background Jobs & Celery + Redis & Long-running extraction tasks \\
+\midrule
+Monitoring & Prometheus + Grafana & Metrics, alerting, visualization \\
+\midrule
+Deployment & Docker + Kubernetes & Containerization, orchestration, scaling \\
+\bottomrule
+\end{tabular}
+\end{table}
+
+\subsection{Infrastructure Requirements}
+
+\subsubsection{Compute}
+
+\begin{itemize}
+    \item \textbf{Extraction:} GPU optional (speeds up large-scale processing), CPU sufficient for small batches
+    \item \textbf{Resolution:} CPU-intensive (clustering), can parallelize across cores
+    \item \textbf{Query:} Low latency required (<500ms), CPU sufficient
+\end{itemize}
+
+\subsubsection{Storage}
+
+\begin{itemize}
+    \item \textbf{Contracts:} ~500 MB (S3 or local filesystem)
+    \item \textbf{Knowledge graph:} ~1--2 GB (Neo4j database with 50K--100K triples)
+    \item \textbf{Embeddings:} ~500 MB (FAISS index, in-memory or mmap)
+    \item \textbf{Cache:} Redis for query caching (1--2 GB RAM)
+    \item \textbf{Total:} ~3--4 GB for complete system
+\end{itemize}
+
+\subsubsection{Deployment Options}
+
+\begin{enumerate}
+    \item \textbf{Development:} Local machine (Mac/Linux with 16 GB RAM)
+    \item \textbf{Staging:} Single cloud VM (AWS EC2 t3.xlarge: 4 vCPU, 16 GB RAM)
+    \item \textbf{Production:} Kubernetes cluster with horizontal scaling
+    \begin{itemize}
+        \item API pods: 2--4 replicas
+        \item Worker pods (extraction/resolution): 4--8 replicas
+        \item Neo4j: 1 instance (4--8 GB RAM)
+        \item Redis: 1 instance (2 GB RAM)
+    \end{itemize}
+\end{enumerate}
+
+\newpage
+
+% Success Metrics & Risk Analysis
+\section{Success Metrics \& Risk Analysis}
+
+\subsection{Success Metrics}
+
+Success is measured across three dimensions: technical performance, business value, and legal accuracy.
+
+\subsubsection{Technical Metrics}
+
+\begin{table}[H]
+\centering
+\caption{Technical Performance Metrics}
+\begin{tabular}{@{}p{4.5cm}p{2.5cm}p{5cm}@{}}
+\toprule
+\textbf{Metric} & \textbf{Target} & \textbf{Measurement Method} \\
+\midrule
+Triple validity & 98\% & Manual review of 100 random triples by lawyer \\
+\midrule
+MINE-1 score & 65\%+ & Run KGGen MINE-1 benchmark on sample contracts \\
+\midrule
+Entity extraction accuracy & 95\%+ & Compare against CUAD expert annotations \\
+\midrule
+Query latency (simple) & <500ms & P95 latency for single-hop queries \\
+\midrule
+Query latency (complex) & <2s & P95 latency for multi-hop queries \\
+\midrule
+Extraction throughput & 100+ contracts/hour & Avg processing rate with parallelization \\
+\midrule
+Graph density improvement & 80\% reduction in unique relations & Before/after resolution comparison \\
+\midrule
+System uptime & 99.9\% & Production monitoring over 30 days \\
+\bottomrule
+\end{tabular}
+\end{table}
+
+\subsubsection{Business Metrics}
+
+\begin{table}[H]
+\centering
+\caption{Business Value Metrics}
+\begin{tabular}{@{}p{4.5cm}p{2.5cm}p{5cm}@{}}
+\toprule
+\textbf{Metric} & \textbf{Target} & \textbf{Measurement Method} \\
+\midrule
+Time savings & 50\% reduction & User studies: time to complete contract review tasks \\
+\midrule
+Query accuracy & 90\%+ correct answers & Human evaluation of 50 sample queries \\
+\midrule
+User satisfaction & 4/5+ rating & Post-task user surveys with legal practitioners \\
+\midrule
+Contract coverage & 510 contracts & System logs: successful processing \\
+\midrule
+Use case demonstration & All 5 use cases & Case studies for Q\&A, risk, comparison, compliance, due diligence \\
+\midrule
+Cost per contract & <\$1 & LLM API costs + infrastructure costs \\
+\bottomrule
+\end{tabular}
+\end{table}
+
+\subsubsection{Legal Metrics}
+
+\begin{table}[H]
+\centering
+\caption{Legal Accuracy Metrics}
+\begin{tabular}{@{}p{4.5cm}p{2.5cm}p{5cm}@{}}
+\toprule
+\textbf{Metric} & \textbf{Target} & \textbf{Measurement Method} \\
+\midrule
+Lawyer validation & 95\%+ agreement & Senior lawyer reviews 100 system outputs \\
+\midrule
+Critical error rate & <2\% & Track critical errors (incorrect legal interpretations) \\
+\midrule
+Compliance & 100\% & Audit against data protection regulations (GDPR, CCPA) \\
+\midrule
+Provenance accuracy & 100\% & Verify all triples link back to correct source contract/clause \\
+\bottomrule
+\end{tabular}
+\end{table}
+
+\subsection{Risk Analysis and Mitigation}
+
+\subsubsection{Technical Risks}
+
+\begin{table}[H]
+\centering
+\caption{Technical Risk Matrix}
+\small
+\begin{tabular}{@{}p{3cm}p{1.5cm}p{1.5cm}p{6cm}@{}}
+\toprule
+\textbf{Risk} & \textbf{Impact} & \textbf{Likelihood} & \textbf{Mitigation Strategies} \\
+\midrule
+LLM hallucination (incorrect extractions) & High & Medium & Use Claude Sonnet 3.5 (73\% MINE-1); strong prompt constraints; confidence scores; human review of low-confidence triples; continuous evaluation \\
+\midrule
+Resolution errors (merging distinct entities) & High & Medium & Conservative resolution approach; LLM prompted with legal constraints; manual review of samples; lawyer validation; maintain aliases \\
+\midrule
+Scalability bottlenecks & Medium & Low & Parallel processing; incremental updates; query caching; efficient graph database; optimize resolution algorithm \\
+\midrule
+High LLM API costs & Medium & Medium & Batch processing; cache LLM outputs; use cheaper models for non-critical tasks; optimize prompts; consider self-hosted models \\
+\midrule
+Graph database performance degradation & Medium & Low & Use Neo4j with proper indexing; optimize Cypher queries; implement caching layer; horizontal scaling if needed \\
+\bottomrule
+\end{tabular}
+\end{table}
+
+\subsubsection{Legal Risks}
+
+\begin{table}[H]
+\centering
+\caption{Legal Risk Matrix}
+\small
+\begin{tabular}{@{}p{3cm}p{1.5cm}p{1.5cm}p{6cm}@{}}
+\toprule
+\textbf{Risk} & \textbf{Impact} & \textbf{Likelihood} & \textbf{Mitigation Strategies} \\
+\midrule
+Incorrect legal advice & Critical & Medium & Clear disclaimer: assistive tool, not legal advice; lawyer review of outputs; confidence scores; explain reasoning with citations; E\&O insurance \\
+\midrule
+Confidentiality breach & Critical & Low & Secure storage with encryption; access control and authentication; audit logs; compliance with GDPR/CCPA; self-hosted option for sensitive contracts \\
+\midrule
+Jurisdictional limitations & Medium & High & Clear scope: focus on US/UK/Commonwealth common law; jurisdiction tagging; future expansion to civil law; partner with local legal experts \\
+\midrule
+Unauthorized practice of law & High & Low & Position as software tool for legal professionals, not legal service; require lawyer oversight; do not provide legal advice or recommendations \\
+\bottomrule
+\end{tabular}
+\end{table}
+
+\subsubsection{Business Risks}
+
+\begin{table}[H]
+\centering
+\caption{Business Risk Matrix}
+\small
+\begin{tabular}{@{}p{3cm}p{1.5cm}p{1.5cm}p{6cm}@{}}
+\toprule
+\textbf{Risk} & \textbf{Impact} & \textbf{Likelihood} & \textbf{Mitigation Strategies} \\
+\midrule
+Low user adoption & High & Medium & Involve lawyers in design and testing; emphasize augmentation not replacement; transparent, explainable system; strong accuracy and reliability; education and training materials \\
+\midrule
+Market competition & Medium & High & Unique value: structured knowledge graph vs text search; common law specialization; technology contract focus; open source components; partnerships with law firms \\
+\midrule
+Regulatory changes & Medium & Low & Monitor legal tech regulations; maintain compliance documentation; flexible architecture for adaptation; legal counsel consultation \\
+\midrule
+Data quality issues (CUAD) & Medium & Low & Validate CUAD annotations during extraction; identify and flag inconsistencies; human review of problematic contracts; augment with additional datasets \\
+\bottomrule
+\end{tabular}
+\end{table}
+
+\subsection{Quality Assurance Process}
+
+\subsubsection{Testing Strategy}
+
+\begin{enumerate}
+    \item \textbf{Unit Tests}
+    \begin{itemize}
+        \item Target: 90\%+ code coverage
+        \item Test extraction logic, normalization, resolution algorithms
+        \item Use pytest framework
+    \end{itemize}
+
+    \item \textbf{Integration Tests}
+    \begin{itemize}
+        \item End-to-end pipeline testing
+        \item Test with sample contracts through full workflow
+        \item Validate API endpoints
+    \end{itemize}
+
+    \item \textbf{Validation Tests}
+    \begin{itemize}
+        \item Triple validity: Manual review of 100 random triples, target 98\%
+        \item MINE-1 evaluation: Run KGGen benchmark, target 65\%+
+        \item Entity extraction: Compare against CUAD annotations, target 95\%+
+        \item Resolution quality: Manual review of entity clusters, target 95\% correct
+    \end{itemize}
+
+    \item \textbf{User Acceptance Testing}
+    \begin{itemize}
+        \item Recruit 5--10 legal practitioners
+        \item Test on real contract review tasks
+        \item Collect qualitative and quantitative feedback
+    \end{itemize}
+\end{enumerate}
+
+\subsubsection{Continuous Monitoring}
+
+Production system monitoring includes:
+
+\begin{itemize}
+    \item \textbf{Error tracking:} Extraction failures, LLM API errors, database errors
+    \item \textbf{Performance metrics:} Query latency (P50, P95, P99), throughput (queries/second)
+    \item \textbf{Quality metrics:} User feedback, correction rate, confidence scores
+    \item \textbf{Cost metrics:} LLM API costs per contract, infrastructure costs
+    \item \textbf{Usage metrics:} Active users, queries per user, most common query types
+    \item \textbf{Alerting:} Slack/email alerts for critical failures, performance degradation, anomalies
+\end{itemize}
+
+\subsection{Ethical Considerations}
+
+\subsubsection{Transparency}
+
+\begin{itemize}
+    \item All system outputs include source citations linking back to contract text
+    \item Confidence scores displayed for LLM-generated content
+    \item Knowledge graph provenance: every triple traceable to source
+    \item Clear disclosure that system uses AI/LLM technology
+\end{itemize}
+
+\subsubsection{Bias and Fairness}
+
+\begin{itemize}
+    \item CUAD dataset represents real-world contracts (potential bias toward larger companies)
+    \item Monitor for systematic errors favoring one party type over another
+    \item Validate across diverse contract types and jurisdictions
+    \item Human lawyer oversight to catch biased interpretations
+\end{itemize}
+
+\subsubsection{Data Privacy}
+
+\begin{itemize}
+    \item CUAD contracts are publicly available (no confidentiality issues)
+    \item User contracts must be encrypted at rest and in transit
+    \item Access control: users can only access their own contracts
+    \item Audit logs: track all data access for compliance
+    \item Self-hosted deployment option for sensitive contracts
+\end{itemize}
+
+\subsubsection{Professional Responsibility}
+
+\begin{itemize}
+    \item System is assistive tool for legal professionals, not replacement
+    \item Lawyers retain responsibility for final decisions
+    \item Encourage lawyer review and validation of outputs
+    \item Training materials emphasize appropriate use and limitations
+\end{itemize}
+
+\newpage
+
+% Conclusion
+\section{Conclusion}
+
+\subsection{Summary}
+
+This Product Requirements Document specifies a comprehensive knowledge graph extraction system that applies the KGGen methodology to the CUAD contract dataset. The system addresses critical gaps in legal contract analysis by:
+
+\begin{enumerate}
+    \item \textbf{Structured Knowledge Representation:} Converting 510 unstructured contracts into queryable knowledge graphs containing 50,000--100,000 verified triples
+
+    \item \textbf{Context-Aware LLM Integration:} Providing Large Language Models with precise contractual relationships rather than raw text, enabling accurate multi-hop reasoning
+
+    \item \textbf{Common Law Alignment:} Embedding contract interpretation principles from US/UK/Commonwealth jurisdictions throughout extraction and resolution logic
+
+    \item \textbf{Technology Contract Specialization:} Focusing on IP licensing, software development, and SaaS agreements with specialized ontology
+
+    \item \textbf{High Accuracy:} Targeting 98\% triple validity and 65\%+ MINE-1 information retention scores
+\end{enumerate}
+
+\subsection{Value Proposition}
+
+The CUAD Knowledge Graph Generator enables:
+
+\begin{itemize}
+    \item \textbf{50\% time reduction} in contract review cycles
+    \item \textbf{Automated analysis} of 41+ clause categories without manual reading
+    \item \textbf{Proactive risk identification} across entire contract portfolios
+    \item \textbf{Democratized legal access} for small businesses and individuals
+    \item \textbf{Engineer-lawyer collaboration} through structured, explainable AI
+\end{itemize}
+
+\subsection{Path to Production}
+
+The four-phase implementation roadmap provides clear path from prototype to production:
+
+\begin{enumerate}
+    \item \textbf{Phase 1 (4--6 weeks):} Validate methodology with 50-contract prototype
+    \item \textbf{Phase 2 (6--8 weeks):} Scale to full 510-contract dataset with optimization
+    \item \textbf{Phase 3 (4--6 weeks):} Build user-facing application and deploy to production
+    \item \textbf{Phase 4 (Ongoing):} Expand ontology, add jurisdictions, improve models
+\end{enumerate}
+
+Total timeline: 16--20 weeks to production deployment.
+
+\subsection{Competitive Advantages}
+
+This system differentiates from existing legal AI tools through:
+
+\begin{enumerate}
+    \item \textbf{Knowledge graph foundation:} Structured relationships vs probabilistic text retrieval
+    \item \textbf{Multi-hop reasoning:} Answer complex queries spanning multiple relationship types
+    \item \textbf{Common law expertise:} Designed by and for legal practitioners in common law jurisdictions
+    \item \textbf{Technology focus:} Specialized for IP, software, and technology agreements
+    \item \textbf{Explainability:} Transparent reasoning with source citations and provenance tracking
+\end{enumerate}
+
+\subsection{Next Steps}
+
+\paragraph{Immediate Actions:}
+\begin{enumerate}
+    \item Secure approval from stakeholders (engineering team + senior lawyer)
+    \item Allocate resources: 2 engineers + 1 lawyer (part-time) for Phase 1
+    \item Set up development environment and access to LLM APIs
+    \item Download CUAD dataset and begin Phase 1 implementation
+\end{enumerate}
+
+\paragraph{Success Criteria for Approval:}
+\begin{itemize}
+    \item Technical feasibility validated through Phase 1 prototype
+    \item Legal accuracy confirmed by lawyer review (95\%+ agreement)
+    \item User value demonstrated through time savings measurement
+    \item Cost model validated (target <\$1 per contract processing cost)
+\end{itemize}
+
+\subsection{Contact Information}
+
+For questions, clarifications, or feedback on this PRD:
+
+\begin{itemize}
+    \item \textbf{Technical Lead:} K-Dense Web (\href{mailto:contact@k-dense.ai}{contact@k-dense.ai})
+    \item \textbf{Documentation:} \href{https://k-dense.ai}{k-dense.ai}
+\end{itemize}
+
+\vspace{1cm}
+
+\begin{center}
+\rule{0.8\textwidth}{0.5pt}
+
+\vspace{0.5cm}
+
+\textit{This document was generated using K-Dense Web to support the development of next-generation legal AI systems.}
+
+\vspace{0.3cm}
+
+\href{https://k-dense.ai}{k-dense.ai}
+\end{center}
+
+\newpage
+
+% Appendices
+\appendix
+
+\section{CUAD Label Categories}
+
+The CUAD dataset includes 13,101 expert annotations across 41 label categories:
+
+\begin{multicols}{2}
+\begin{enumerate}
+    \item Document Name
+    \item Parties
+    \item Agreement Date
+    \item Effective Date
+    \item Expiration Date
+    \item Renewal Term
+    \item Notice Period To Terminate Renewal
+    \item Governing Law
+    \item Most Favored Nation
+    \item Non-Compete
+    \item Exclusivity
+    \item No-Solicit Of Customers
+    \item No-Solicit Of Employees
+    \item Non-Disparagement
+    \item Termination For Convenience
+    \item ROFR/ROFO/ROFN
+    \item Change Of Control
+    \item Anti-Assignment
+    \item Revenue/Profit Sharing
+    \item Cap On Liability
+    \item Uncapped Liability
+    \item Liquidated Damages
+    \item Warranty Duration
+    \item Insurance
+    \item Covenant Not To Sue
+    \item Third Party Beneficiary
+    \item Irrevocable Or Perpetual License
+    \item Source Code Escrow
+    \item Post-Termination Services
+    \item Audit Rights
+    \item Volume Restriction
+    \item IP Ownership Assignment
+    \item Joint IP Ownership
+    \item License Grant
+    \item Non-Transferable License
+    \item Affiliate License-Licensor
+    \item Affiliate License-Licensee
+    \item Unlimited/All-You-Can-Eat-License
+    \item Minimum Commitment
+    \item Competitive Restriction Exception
+    \item Price Restrictions
+\end{enumerate}
+\end{multicols}
+
+\section{Common Law Contract Interpretation Principles}
+
+\subsection{Key Principles Guiding Ontology Design}
+
+\begin{enumerate}
+    \item \textbf{Plain Meaning Rule (Literal Interpretation)}
+    \begin{itemize}
+        \item Terms interpreted by their ordinary, plain meaning as understood by reasonable person
+        \item \textbf{Application:} Canonical entity names use clear, plain legal terminology
+    \end{itemize}
+
+    \item \textbf{Contra Proferentem (Against the Drafter)}
+    \begin{itemize}
+        \item Ambiguous terms construed against party who drafted the contract
+        \item \textbf{Application:} Flag ambiguous terms in knowledge graph for human review
+    \end{itemize}
+
+    \item \textbf{Business Efficacy Test}
+    \begin{itemize}
+        \item Interpret contract to give commercial effect and make business sense
+        \item \textbf{Application:} Relations model business relationships, not just textual patterns
+    \end{itemize}
+
+    \item \textbf{Entire Agreement Clause}
+    \begin{itemize}
+        \item Contract is complete expression of parties' agreement, excludes external evidence
+        \item \textbf{Application:} Extract from full contract text, don't rely on external sources
+    \end{itemize}
+
+    \item \textbf{Contextual Interpretation (Purposive Approach)}
+    \begin{itemize}
+        \item Consider contract as whole, commercial context, and parties' intentions
+        \item \textbf{Application:} Use full contract context for extraction, not isolated clauses
+    \end{itemize}
+\end{enumerate}
+
+\section{Example Queries and Expected Outputs}
+
+\subsection{Query 1: IP Rights Inquiry}
+
+\paragraph{Question:} ``What IP rights does the licensee receive in the software license agreement?''
+
+\paragraph{Relevant Triples:}
+\begin{itemize}
+    \item (ABC Corp, licenses\_to, XYZ Inc)
+    \item (License, is\_non\_exclusive, True)
+    \item (License, scope, worldwide)
+    \item (License, includes\_right\_to, use)
+    \item (License, includes\_right\_to, modify)
+    \item (XYZ Inc, cannot\_transfer\_license\_to, third\_party)
+\end{itemize}
+
+\paragraph{Answer:} ``The licensee (XYZ Inc) receives a non-exclusive, worldwide license to use and modify the software. However, the license is non-transferable and cannot be sublicensed to third parties. [Citation: Contract ID ABC-2023-001, Section 2.1]''
+
+\subsection{Query 2: Non-Compete Restriction}
+
+\paragraph{Question:} ``Are there any non-compete restrictions, and if so, what is the scope?''
+
+\paragraph{Relevant Triples:}
+\begin{itemize}
+    \item (ABC Corp, subject\_to\_restriction, Non-Compete)
+    \item (Non-Compete, scope, same\_market)
+    \item (Non-Compete, duration, 2\_years)
+    \item (Non-Compete, geography, California)
+    \item (Non-Compete, effective\_from, termination\_date)
+\end{itemize}
+
+\paragraph{Answer:} ``Yes, ABC Corp is subject to a non-compete restriction. The restriction prohibits competing in the same market within California for 2 years following termination of the agreement. [Citation: Contract ID ABC-2023-001, Section 7.2]''
+
+\subsection{Query 3: Liability Cap}
+
+\paragraph{Question:} ``What is the liability cap in this agreement?''
+
+\paragraph{Relevant Triples:}
+\begin{itemize}
+    \item (Agreement, has\_liability\_provision, Cap On Liability)
+    \item (Cap On Liability, amount, \$1,000,000)
+    \item (Cap On Liability, scope, direct\_damages)
+    \item (Cap On Liability, exceptions, [IP\_infringement, willful\_misconduct])
+\end{itemize}
+
+\paragraph{Answer:} ``The agreement includes a liability cap of \$1,000,000 for direct damages. However, this cap does not apply to IP infringement claims or willful misconduct, which remain uncapped. [Citation: Contract ID ABC-2023-001, Section 8.3]''
+
+\section{Technology Stack Details}
+
+\subsection{LLM Providers}
+
+\begin{table}[H]
+\centering
+\caption{LLM Model Comparison}
+\begin{tabular}{@{}llll@{}}
+\toprule
+\textbf{Model} & \textbf{Version} & \textbf{MINE-1} & \textbf{Use Case} \\
+\midrule
+Claude Sonnet 3.5 & 20241022 & 73\% & Primary extraction \\
+GPT-4o & 20241120 & 66\% & Fallback extraction \\
+Gemini 2.0 Flash & Latest & 44\% & Not recommended \\
+\bottomrule
+\end{tabular}
+\end{table}
+
+\subsection{Python Libraries}
+
+\paragraph{Core Dependencies:}
+\begin{itemize}
+    \item \texttt{dspy-ai>=2.0}: LLM orchestration
+    \item \texttt{anthropic}: Claude API client
+    \item \texttt{openai}: GPT-4o API client
+    \item \texttt{sentence-transformers}: Embeddings
+    \item \texttt{neo4j}: Graph database driver
+    \item \texttt{networkx}: Graph algorithms
+    \item \texttt{rank-bm25}: BM25 search
+    \item \texttt{faiss-cpu}: Vector similarity search
+    \item \texttt{fastapi}: Web framework
+    \item \texttt{pdfplumber}: PDF text extraction
+    \item \texttt{pydantic}: Data validation
+    \item \texttt{pytest}: Testing framework
+\end{itemize}
+
+\end{document}

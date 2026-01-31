@@ -1,0 +1,284 @@
+\section{Implementation Roadmap}
+
+\subsection{Phase 1: Core Infrastructure (Months 1-3)}
+
+\textbf{Objective:} Establish foundational data pipeline and KGGEN extraction engine
+
+\textbf{Deliverables:}
+\begin{itemize}
+    \item Data pipeline for contract ingestion (PDF/DOCX parsing, OCR)
+    \item Neo4j graph database deployment with schema implementation
+    \item Qdrant vector database setup for embeddings
+    \item PostgreSQL metadata database with contract catalog
+    \item S-BERT embedding service deployment
+    \item Basic KGGEN Stage 1 (entity and relation extraction) implementation
+\end{itemize}
+
+\textbf{Key Tasks:}
+\begin{enumerate}
+    \item Deploy infrastructure on AWS (Kubernetes cluster, RDS, S3)
+    \item Implement contract parsing library (PDFMiner, python-docx)
+    \item Configure Neo4j with KG schema and indexes
+    \item Set up embedding API (FastAPI + S-BERT model)
+    \item Integrate Google Gemini 2.0 Flash via OpenRouter
+    \item Build DSPy signatures for legal entity/relation extraction
+    \item Create Apache Airflow DAGs for pipeline orchestration
+\end{enumerate}
+
+\textbf{Success Criteria:}
+\begin{itemize}
+    \item Process 10 sample contracts end-to-end
+    \item Extract >1000 triples with >70\% accuracy (manual validation)
+    \item Contract processing time <5 minutes per contract
+\end{itemize}
+
+\subsection{Phase 2: CUAD Integration and Ontology Mapping (Months 4-6)}
+
+\textbf{Objective:} Implement full CUAD label extraction and technology agreement ontology
+
+\textbf{Deliverables:}
+\begin{itemize}
+    \item All 41 CUAD label extractors with DSPy optimization
+    \item Technology agreement ontology extensions
+    \item KGGEN Stage 2 (aggregation) and Stage 3 (entity resolution)
+    \item Training pipeline on CUAD dataset (510 contracts, 13K annotations)
+    \item Evaluation framework with CUAD benchmark metrics
+\end{itemize}
+
+\textbf{Key Tasks:}
+\begin{enumerate}
+    \item Implement extractors for all 41 CUAD categories
+    \item Create DSPy few-shot examples from CUAD training set
+    \item Implement aggregation (normalization, deduplication)
+    \item Implement entity resolution (S-BERT clustering, BM25 retrieval, LLM deduplication)
+    \item Fine-tune prompts to maximize precision @ 80\% recall
+    \item Build validation dashboard for legal expert review
+    \item Conduct inter-annotator agreement study with lawyers
+\end{enumerate}
+
+\textbf{Success Criteria:}
+\begin{itemize}
+    \item AUPR >45\% on CUAD test set (vs. DeBERTa baseline 47.8\%)
+    \item Precision @ 80\% Recall >50\% (vs. DeBERTa 44.0\%)
+    \item Entity deduplication ratio >20\% on technology contracts
+    \item Legal expert validation: >85\% agreement on critical clauses
+\end{itemize}
+
+\subsection{Phase 3: Retrieval System and LLM Integration (Months 7-9)}
+
+\textbf{Objective:} Build hybrid retrieval mechanism and LLM-powered analysis
+
+\textbf{Deliverables:}
+\begin{itemize}
+    \item Elasticsearch BM25 indexing for KG triples
+    \item Hybrid retrieval combining BM25 and semantic similarity
+    \item Multi-hop graph traversal implementation
+    \item LLM context assembly and prompt engineering
+    \item GPT-4o integration for analysis synthesis
+    \item Citation extraction and validation
+\end{itemize}
+
+\textbf{Key Tasks:}
+\begin{enumerate}
+    \item Index all KG triples in Elasticsearch with metadata
+    \item Implement Qdrant vector search with HNSW indexing
+    \item Build hybrid scoring function (0.5 BM25 + 0.5 semantic)
+    \item Implement Cypher queries for 2-hop graph traversal in Neo4j
+    \item Design prompt templates for contract analysis
+    \item Integrate OpenAI GPT-4o API with retry logic
+    \item Build citation parser to extract page/section references
+    \item Create query performance benchmarks (<3 second latency)
+\end{enumerate}
+
+\textbf{Success Criteria:}
+\begin{itemize}
+    \item Query response time <3 seconds at 95th percentile
+    \item Retrieval recall >90\% on test queries
+    \item LLM analysis accuracy >80\% (expert-validated)
+    \item Citation accuracy >95\% (correct page/section attribution)
+\end{itemize}
+
+\subsection{Phase 4: User Interface and Workflow (Months 10-12)}
+
+\textbf{Objective:} Build professional web application for legal users
+
+\textbf{Deliverables:}
+\begin{itemize}
+    \item React + TypeScript web application
+    \item Contract upload interface with drag-and-drop
+    \item Processing status tracking and notifications
+    \item Semantic search interface with natural language input
+    \item Knowledge graph visualization (D3.js/Cytoscape.js)
+    \item Analysis dashboard with risk indicators
+    \item User authentication and access control
+\end{itemize}
+
+\textbf{Key Tasks:}
+\begin{enumerate}
+    \item Build React app with Material-UI components
+    \item Implement contract upload with progress tracking
+    \item Create search interface with query suggestions
+    \item Build results viewer with highlighted contract sections
+    \item Implement interactive KG visualization with filtering
+    \item Design analysis dashboard with clause coverage matrix
+    \item Set up OAuth 2.0 authentication with JWT tokens
+    \item Conduct usability testing with 5-10 lawyers
+    \item Iterate on UI/UX based on feedback
+\end{enumerate}
+
+\textbf{Success Criteria:}
+\begin{itemize}
+    \item User satisfaction >4.0/5.0 in usability tests
+    \item Contract upload success rate >99\%
+    \item Interface load time <2 seconds
+    \item Support 50+ concurrent users without degradation
+\end{itemize}
+
+\subsection{Phase 5: Production Deployment and Validation (Months 13-15)}
+
+\textbf{Objective:} Launch production system with legal team adoption
+
+\textbf{Deliverables:}
+\begin{itemize}
+    \item Production-grade infrastructure with monitoring
+    \item Security hardening and compliance (SOC 2, attorney-client privilege)
+    \item User training materials and documentation
+    \item Beta launch with pilot legal team (5-10 lawyers)
+    \item Performance optimization based on real usage
+    \item Feedback collection and iterative improvement
+\end{itemize}
+
+\textbf{Key Tasks:}
+\begin{enumerate}
+    \item Deploy production Kubernetes cluster with autoscaling
+    \item Implement end-to-end encryption for contracts
+    \item Set up audit logging for all user actions
+    \item Configure Prometheus + Grafana monitoring dashboards
+    \item Create user documentation (tutorials, FAQs, video guides)
+    \item Conduct security audit and penetration testing
+    \item Train pilot legal team (4-hour workshop)
+    \item Launch beta with 100-200 contracts
+    \item Collect weekly feedback surveys
+    \item Optimize based on real-world performance data
+\end{enumerate}
+
+\textbf{Success Criteria:}
+\begin{itemize}
+    \item System uptime >99.5\% in first 3 months
+    \item Beta user adoption >70\% (using weekly)
+    \item Time savings >50\% vs. manual review (user-reported)
+    \item Cost per contract <\$50 (vs. thousands for manual review)
+    \item Zero critical security incidents
+\end{itemize}
+
+\section{Requirements Specification}
+
+\subsection{Functional Requirements}
+
+\textbf{FR1: Contract Upload and Parsing}
+\begin{itemize}
+    \item \textit{Description:} System shall accept PDF and DOCX contract uploads
+    \item \textit{Input:} Contract file <100MB
+    \item \textit{Output:} Parsed text with structure preservation
+    \item \textit{Priority:} P0 (Must Have)
+    \item \textit{Acceptance:} 99\% successful parse rate on CUAD-like contracts
+\end{itemize}
+
+\textbf{FR2: KGGEN Extraction Pipeline}
+\begin{itemize}
+    \item \textit{Description:} Extract entities, relations, aggregate, and resolve duplicates
+    \item \textit{Input:} Parsed contract text
+    \item \textit{Output:} Knowledge graph with confidence scores
+    \item \textit{Priority:} P0
+    \item \textit{Acceptance:} AUPR >45\% on CUAD benchmark
+\end{itemize}
+
+\textbf{FR3: Knowledge Graph Storage}
+\begin{itemize}
+    \item \textit{Description:} Store and index KG in Neo4j with properties
+    \item \textit{Input:} Extracted triples
+    \item \textit{Output:} Queryable graph database
+    \item \textit{Priority:} P0
+    \item \textit{Acceptance:} Support 1M+ nodes, 5M+ edges
+\end{itemize}
+
+\textbf{FR4: Semantic Search}
+\begin{itemize}
+    \item \textit{Description:} Natural language query against KG using hybrid retrieval
+    \item \textit{Input:} User query string
+    \item \textit{Output:} Top-k relevant triples with scores
+    \item \textit{Priority:} P0
+    \item \textit{Acceptance:} Retrieval recall >90\%, latency <3 seconds
+\end{itemize}
+
+\textbf{FR5: Multi-Hop Retrieval}
+\begin{itemize}
+    \item \textit{Description:} Expand context via 2-hop graph traversal
+    \item \textit{Input:} Retrieved triples
+    \item \textit{Output:} Expanded triple set with context
+    \item \textit{Priority:} P1 (Should Have)
+    \item \textit{Acceptance:} Retrieve contextually relevant neighbors
+\end{itemize}
+
+\textbf{FR6: LLM-Based Analysis}
+\begin{itemize}
+    \item \textit{Description:} Synthesize natural language analysis from KG context
+    \item \textit{Input:} Query + retrieved triples + source text
+    \item \textit{Output:} Analysis with citations
+    \item \textit{Priority:} P0
+    \item \textit{Acceptance:} Analysis accuracy >80\%, citation accuracy >95\%
+\end{itemize}
+
+\textbf{FR7: Results Visualization}
+\begin{itemize}
+    \item \textit{Description:} Display results with highlighted contract sections and KG graph
+    \item \textit{Input:} Analysis results
+    \item \textit{Output:} Formatted UI with contract viewer and graph
+    \item \textit{Priority:} P1
+    \item \textit{Acceptance:} User satisfaction >4.0/5.0
+\end{itemize}
+
+\subsection{Non-Functional Requirements}
+
+\textbf{NFR1: Extraction Accuracy}
+\begin{itemize}
+    \item \textit{Metric:} Precision @ 80\% Recall, AUPR
+    \item \textit{Target:} Precision >50\%, AUPR >45\%
+    \item \textit{Measurement:} CUAD benchmark test set
+\end{itemize}
+
+\textbf{NFR2: Query Response Time}
+\begin{itemize}
+    \item \textit{Metric:} 95th percentile query latency
+    \item \textit{Target:} <3 seconds from query to results
+    \item \textit{Measurement:} Application performance monitoring
+\end{itemize}
+
+\textbf{NFR3: System Availability}
+\begin{itemize}
+    \item \textit{Metric:} Uptime percentage
+    \item \textit{Target:} >99.5\% availability
+    \item \textit{Measurement:} Monthly uptime reports
+\end{itemize}
+
+\textbf{NFR4: Scalability}
+\begin{itemize}
+    \item \textit{Metric:} Contracts processed, concurrent users
+    \item \textit{Target:} Support 10,000+ contracts, 50+ concurrent users
+    \item \textit{Measurement:} Load testing, production metrics
+\end{itemize}
+
+\textbf{NFR5: Security and Privacy}
+\begin{itemize}
+    \item \textit{Requirements:} End-to-end encryption, access control, audit logs
+    \item \textit{Standards:} SOC 2 Type II, GDPR compliance
+    \item \textit{Validation:} Security audit, penetration testing
+\end{itemize}
+
+\textbf{NFR6: API Rate Limiting}
+\begin{itemize}
+    \item \textit{Limits:} 1000 requests/hour per user, 100 uploads/day
+    \item \textit{Purpose:} Prevent abuse, control costs
+    \item \textit{Implementation:} Redis-based rate limiter
+\end{itemize}
+
