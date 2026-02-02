@@ -334,6 +334,263 @@ class ExtractionStage:
         """Extract party names from contract."""
         return self.loader.extract_parties(contract)
 
+    # =========================================================================
+    # Contract Edit Processing for KGGEN Labeling
+    # =========================================================================
+
+    async def process_edit(
+        self,
+        edit_data: dict,
+        include_context: bool = True,
+    ) -> tuple[list[Entity], list[Triple]]:
+        """
+        Process a single contract edit for KGGEN extraction.
+
+        This method provides label-guided extraction based on CUAD categories
+        affected by the edit.
+
+        Args:
+            edit_data: Prepared edit data from ContractEditService.prepare_edits_for_kggen()
+            include_context: Whether to use full context text
+
+        Returns:
+            Tuple of (entities, triples) extracted from the edit
+        """
+        edit_id = edit_data.get("edit_id", "")
+        contract_id = UUID(edit_data.get("contract_id", str(uuid4())))
+        text = edit_data.get("text", "")
+        affected_labels = edit_data.get("affected_labels", [])
+        label_hints = edit_data.get("cuad_label_hints", "")
+
+        logger.info(
+            "edit_extraction_started",
+            edit_id=edit_id,
+            affected_labels=affected_labels,
+        )
+
+        # Extract entities with label guidance
+        entities = await self._extract_entities_with_labels(
+            text=text,
+            contract_id=contract_id,
+            affected_labels=affected_labels,
+            label_hints=label_hints,
+        )
+
+        # Extract relations
+        triples = await self._extract_relations(
+            text=text,
+            entities=entities,
+            contract_id=contract_id,
+        )
+
+        # Tag extracted items with edit source
+        edit_uuid = UUID(edit_id) if edit_id else uuid4()
+        for entity in entities:
+            entity.source_edit_id = edit_uuid
+            entity.cuad_labels = affected_labels
+
+        for triple in triples:
+            triple.source_edit_id = edit_uuid
+            triple.cuad_labels = affected_labels
+
+        logger.info(
+            "edit_extraction_completed",
+            edit_id=edit_id,
+            entities=len(entities),
+            triples=len(triples),
+        )
+
+        return entities, triples
+
+    async def _extract_entities_with_labels(
+        self,
+        text: str,
+        contract_id: UUID,
+        affected_labels: list[str],
+        label_hints: str,
+    ) -> list[Entity]:
+        """
+        Extract entities with CUAD label guidance.
+
+        Uses the affected labels to focus extraction on relevant entity types.
+        """
+        # Map CUAD labels to expected entity types
+        expected_types = self._labels_to_entity_types(affected_labels)
+
+        raw_entities = await self.llm.extract_entities(text)
+
+        entities = []
+        for raw in raw_entities:
+            try:
+                entity_type = self._parse_entity_type(raw.get("type", ""))
+                if entity_type is None:
+                    continue
+
+                # Boost confidence for entities matching expected types
+                confidence = raw.get("confidence", 0.8)
+                if entity_type in expected_types:
+                    confidence = min(confidence + 0.1, 1.0)
+
+                entity = Entity(
+                    id=uuid4(),
+                    name=raw.get("name", ""),
+                    entity_type=entity_type,
+                    normalized_name=self._normalize_name(raw.get("name", "")),
+                    properties=raw.get("properties", {}),
+                    source_text=text[:500],
+                    source_contract_id=contract_id,
+                    confidence=confidence,
+                    cuad_labels=affected_labels,
+                )
+                entities.append(entity)
+            except Exception as e:
+                logger.warning("entity_parse_failed", raw=raw, error=str(e))
+                continue
+
+        return entities
+
+    def _labels_to_entity_types(self, labels: list[str]) -> set[EntityType]:
+        """Map CUAD labels to expected entity types."""
+        type_map = {
+            "Parties": {EntityType.PARTY},
+            "IP Ownership": {EntityType.IP_ASSET, EntityType.PARTY},
+            "IP Assignment": {EntityType.IP_ASSET, EntityType.PARTY},
+            "License Grant": {EntityType.IP_ASSET, EntityType.PARTY},
+            "Cap on Liability": {EntityType.LIABILITY_PROVISION},
+            "Liquidated Damages": {EntityType.LIABILITY_PROVISION},
+            "Uncapped Liability": {EntityType.LIABILITY_PROVISION},
+            "Effective Date": {EntityType.TEMPORAL},
+            "Expiration Date": {EntityType.TEMPORAL},
+            "Renewal Term": {EntityType.TEMPORAL},
+            "Non-Compete": {EntityType.RESTRICTION},
+            "Exclusivity": {EntityType.RESTRICTION},
+            "Anti-Assignment": {EntityType.RESTRICTION},
+            "Governing Law": {EntityType.JURISDICTION},
+            "Revenue Commitment": {EntityType.OBLIGATION},
+            "Audit Rights": {EntityType.OBLIGATION},
+            "Indemnification": {EntityType.OBLIGATION},
+        }
+
+        expected = set()
+        for label in labels:
+            if label in type_map:
+                expected.update(type_map[label])
+
+        return expected if expected else set(EntityType)
+
+    async def process_edits_batch(
+        self,
+        edits_data: list[dict],
+        max_concurrent: int = 3,
+    ) -> dict[str, tuple[list[Entity], list[Triple]]]:
+        """
+        Process multiple contract edits in batch.
+
+        Args:
+            edits_data: List of prepared edit data from ContractEditService
+            max_concurrent: Max concurrent extractions
+
+        Returns:
+            Dict mapping edit_id to (entities, triples)
+        """
+        import asyncio
+
+        results: dict[str, tuple[list[Entity], list[Triple]]] = {}
+
+        # Process in batches
+        for i in range(0, len(edits_data), max_concurrent):
+            batch = edits_data[i:i + max_concurrent]
+
+            tasks = [self.process_edit(edit) for edit in batch]
+            batch_results = await asyncio.gather(*tasks, return_exceptions=True)
+
+            for edit_data, result in zip(batch, batch_results):
+                edit_id = edit_data.get("edit_id", "")
+                if isinstance(result, Exception):
+                    logger.error(
+                        "edit_extraction_failed",
+                        edit_id=edit_id,
+                        error=str(result),
+                    )
+                    results[edit_id] = ([], [])
+                else:
+                    results[edit_id] = result
+
+        logger.info(
+            "batch_edit_extraction_completed",
+            edits=len(edits_data),
+            successful=sum(1 for r in results.values() if r[0] or r[1]),
+        )
+
+        return results
+
+    async def extract_from_last_edits(
+        self,
+        contract_id: UUID,
+        count: int = 10,
+        unprocessed_only: bool = True,
+    ) -> tuple[list[Entity], list[Triple], list[str]]:
+        """
+        Convenience method to retrieve and process last contract edits.
+
+        Combines edit retrieval and extraction in one call.
+
+        Args:
+            contract_id: The contract ID
+            count: Number of recent edits to process
+            unprocessed_only: Only process unprocessed edits
+
+        Returns:
+            Tuple of (all_entities, all_triples, edit_ids_processed)
+        """
+        from kggen_cuad.services.contract_edit_service import get_contract_edit_service
+
+        edit_service = get_contract_edit_service()
+
+        # Get last edits
+        edits = edit_service.get_last_edits(
+            contract_id=contract_id,
+            count=count,
+            unprocessed_only=unprocessed_only,
+        )
+
+        if not edits:
+            logger.info("no_edits_to_process", contract_id=str(contract_id))
+            return [], [], []
+
+        # Prepare for extraction
+        edits_data = edit_service.prepare_edits_for_kggen(edits, include_context=True)
+
+        # Process all edits
+        results = await self.process_edits_batch(edits_data)
+
+        # Aggregate results
+        all_entities: list[Entity] = []
+        all_triples: list[Triple] = []
+        edit_ids_processed: list[str] = []
+
+        for edit_id, (entities, triples) in results.items():
+            all_entities.extend(entities)
+            all_triples.extend(triples)
+            edit_ids_processed.append(edit_id)
+
+            # Mark edit as processed
+            edit_service.mark_edit_processed(
+                edit_id=UUID(edit_id),
+                entities_extracted=[e.id for e in entities],
+                triples_extracted=[t.id for t in triples],
+            )
+
+        logger.info(
+            "last_edits_extracted",
+            contract_id=str(contract_id),
+            edits_processed=len(edit_ids_processed),
+            entities=len(all_entities),
+            triples=len(all_triples),
+        )
+
+        return all_entities, all_triples, edit_ids_processed
+
 
 def get_extraction_stage() -> ExtractionStage:
     """Get extraction stage instance."""

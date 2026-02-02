@@ -77,9 +77,10 @@ def create_app() -> FastAPI:
         )
 
     # Include routers
-    from kggen_cuad.api.routes import contracts, graph, query, pipeline
+    from kggen_cuad.api.routes import contracts, edits, graph, query, pipeline
 
     app.include_router(contracts.router, prefix="/api/v1/contracts", tags=["contracts"])
+    app.include_router(edits.router, prefix="/api/v1/edits", tags=["edits"])
     app.include_router(graph.router, prefix="/api/v1/graph", tags=["graph"])
     app.include_router(query.router, prefix="/api/v1/query", tags=["query"])
     app.include_router(pipeline.router, prefix="/api/v1/pipeline", tags=["pipeline"])

@@ -74,6 +74,7 @@ logs/
 # Model cache
 .cache/
 models/
+!src/kggen_cuad/models/
 
 # Docker
 docker/postgres/data/
