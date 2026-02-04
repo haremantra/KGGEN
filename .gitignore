@@ -78,6 +78,17 @@ models/
 # Docker
 docker/postgres/data/
 
+# Docker volumes (handled by docker-compose)
+neo4j_data/
+postgres_data/
+redis_data/
+qdrant_data/
+
 # OS
 .DS_Store
 Thumbs.db
+
+# Secrets
+*.pem
+*.key
+credentials.json

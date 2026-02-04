@@ -4,90 +4,131 @@ This file provides guidance to Claude Code (claude.ai/code) when working with co
 
 ## Project Overview
 
-KGGEN-CUAD is a Knowledge Graph Generator that applies the KGGen methodology to the CUAD (Contract Understanding Atticus Dataset) for legal contract analysis. The system extracts structured knowledge graphs from legal contracts to enable context-aware LLM analysis, specializing in technology agreements within common law jurisdictions.
+KGGEN-CUAD is a Knowledge Graph Generator and Contract Analysis system that applies the KGGen methodology to the CUAD (Contract Understanding Atticus Dataset) for legal contract analysis. The system extracts structured knowledge graphs from legal contracts, performs risk assessment, and enables portfolio-level analysis for technology agreements within common law jurisdictions.
 
-**Current Status:** Planning/PRD phase - workflow scripts and analysis outputs exist, implementation not yet started.
+**Current Status:** MVP Complete - Risk assessment, portfolio analysis, REST API, and web dashboard implemented.
 
 ## Project Structure
 
 ```
 KGGEN/
-├── workflow/                    # Analysis and planning scripts
-│   ├── 01_extract_kggen_methodology.py
-│   ├── 02_extract_cuad_structure.py
-│   ├── 03_map_kggen_to_cuad.py
-│   ├── 04_generate_prd_structure.py
-│   └── 05_create_architecture_diagram.py
-├── data/                        # Structured analysis outputs (JSON)
-│   ├── kggen_methodology_analysis.json
-│   ├── cuad_dataset_analysis.json
-│   ├── tech_agreement_ontology.json
-│   ├── kggen_cuad_mapping.json
-│   └── prd_structure.json       # Complete PRD structure (48KB)
-├── figures/                     # Architecture diagrams
-├── converted_md/                # Converted markdown from source PDFs
-├── COMMERCIALIZATION/           # Business planning documents
-└── writing_outputs/             # Generated documentation
+├── src/
+│   ├── api/                    # FastAPI REST API
+│   │   ├── app.py              # Application factory with CORS, lifespan
+│   │   └── routes.py           # Contract & portfolio endpoints
+│   ├── classification/         # CUAD clause classification
+│   │   ├── classifier.py       # Semantic similarity classifier
+│   │   └── cuad_labels.py      # 41 CUAD label definitions
+│   ├── extraction/             # Entity/relationship extraction
+│   │   └── extractor.py        # LLM-based KG extraction
+│   ├── risk/                   # Risk assessment engine
+│   │   ├── rules.py            # Risk rules for all CUAD categories
+│   │   └── assessor.py         # Hybrid rule + LLM risk scoring
+│   ├── portfolio/              # Portfolio-level analysis
+│   │   └── analyzer.py         # Cross-contract comparison & gaps
+│   ├── utils/                  # Utilities
+│   │   ├── pdf_reader.py       # PDF text extraction
+│   │   └── neo4j_store.py      # Graph database storage
+│   ├── config.py               # Pydantic settings from .env
+│   ├── pipeline.py             # Integrated analysis pipeline
+│   └── main.py                 # CLI entry point
+├── streamlit_app.py            # Web dashboard (5 pages)
+├── docker-compose.yml          # Full stack: API, Streamlit, Neo4j, etc.
+├── Dockerfile                  # Python 3.11 container
+├── pyproject.toml              # Dependencies
+├── data/                       # Sample contracts & analysis outputs
+└── workflow/                   # Original PRD generation scripts
 ```
 
-## Key Reference Documents
-
-- **README.md** - Comprehensive project documentation and analysis summary
-- **data/prd_structure.json** - Complete PRD with technical specifications
-- **data/kggen_cuad_mapping.json** - Architecture mapping of KGGen to CUAD domain
-- **figures/system_architecture_diagram.png** - Visual system architecture
-
-## Architecture Overview
-
-The system implements a 3-stage pipeline:
-
-1. **Extraction** - LLM-based entity and relation extraction from contracts using DSPy
-2. **Aggregation** - Cross-contract normalization and deduplication
-3. **Resolution** - Entity clustering and canonicalization using S-BERT + k-means
-
-**Target Stack (not yet implemented):**
-- Python 3.11+, DSPy, FastAPI, Celery
-- Claude Sonnet 3.5 / GPT-4o for LLM
-- Neo4j (graph), PostgreSQL, Qdrant (vectors), Elasticsearch, Redis
-- React frontend with TypeScript
-
-## Development Commands
+## Key Commands
 
 ```bash
-# Run workflow scripts (Python 3.12 required per pyproject.toml)
-python workflow/01_extract_kggen_methodology.py
-python workflow/02_extract_cuad_structure.py
-python workflow/03_map_kggen_to_cuad.py
-python workflow/04_generate_prd_structure.py
-python workflow/05_create_architecture_diagram.py
+# Start API server
+python -m src.main serve --port 8000 --reload
+
+# Start Streamlit dashboard
+streamlit run streamlit_app.py
+
+# Analyze a contract
+python -m src.main analyze <pdf_path> -o results.json
+
+# Risk assessment only
+python -m src.main risks <pdf_path> --no-llm
+
+# Portfolio analysis
+python -m src.main portfolio <folder> --limit 10 -o portfolio.json
+
+# Compare two contracts
+python -m src.main compare contract1.pdf contract2.pdf
+
+# Docker deployment
+docker-compose up -d
 ```
 
-## Knowledge Graph Schema
+## Architecture Patterns
 
-**Node Types (8):** Party, IPAsset, Obligation, Restriction, LiabilityProvision, Temporal, Jurisdiction, ContractClause
+### Risk Assessment (Hybrid Approach)
+- **Rule-based**: Fast, deterministic scoring for known patterns (41 rules)
+- **LLM-based**: Claude analysis for complex/ambiguous clauses (flagged with `requires_llm=True`)
+- Risk score 0-100 maps to levels: LOW (0-24), MEDIUM (25-49), HIGH (50-74), CRITICAL (75-100)
 
-**Edge Types (10):** LICENSES_TO, OWNS, ASSIGNS, HAS_OBLIGATION, SUBJECT_TO_RESTRICTION, HAS_LIABILITY, GOVERNED_BY, CONTAINS_CLAUSE, EFFECTIVE_ON, TERMINATES_ON
+### API Design
+- FastAPI with async endpoints
+- In-memory storage for demo (replace with PostgreSQL for production)
+- Lazy-loaded pipeline and assessor singletons
+- CORS configured for Streamlit frontend
 
-## Performance Targets
+### Pipeline Flow
+1. **Classification**: Semantic similarity against 41 CUAD label embeddings
+2. **Extraction**: LLM extracts entities, values, relationships from high-confidence clauses
+3. **Risk Assessment**: Rule matching + optional LLM analysis
+4. **Portfolio**: Aggregation, gap analysis, cross-contract comparison
 
-| Metric | Target |
-|--------|--------|
-| Triple Validity | 98% |
-| MINE-1 Score | 65%+ |
-| Entity Extraction Accuracy | 95%+ |
-| Query Latency (P95) | <500ms |
-| Extraction Throughput | 1-2 contracts/min |
+## Code Conventions
 
-## CUAD Dataset
+- Pydantic models for API request/response schemas
+- Dataclasses for internal data structures (ContractAnalysis, RiskAssessment)
+- Type hints throughout
+- `to_dict()` methods for JSON serialization
+- Error handling with HTTPException in routes
 
-- 510 contracts, 13,101 annotations, 41 label categories
-- ~200 contracts relevant to technology agreements
-- Categories: General Information, Restrictive Covenants, Revenue Risks, Intellectual Property, Special Provisions
+## Environment Variables
 
-## Implementation Notes
+Required:
+- `ANTHROPIC_API_KEY` - For Claude LLM features
 
-When implementing the planned `src/` directory structure:
-- Follow the 8-phase dependency order in data/prd_structure.json
-- Use code templates from the PRD for service classes, routes, and tests
-- Apply cross-cutting concerns: telemetry, logging, correlation IDs, auth, rate limiting, caching, circuit breakers
-- Run validation at each checkpoint gate before proceeding to next phase
+Optional (for full stack):
+- `NEO4J_URI`, `NEO4J_USER`, `NEO4J_PASSWORD`
+- `POSTGRES_*` settings
+- `REDIS_URL`
+- `QDRANT_HOST`, `QDRANT_PORT`
+
+## Testing
+
+```bash
+# API health check
+curl http://localhost:8000/health
+
+# Upload and analyze
+curl -X POST http://localhost:8000/api/contracts/upload \
+  -F "file=@contract.pdf"
+
+# Get risks
+curl http://localhost:8000/api/contracts/{id}/risks
+```
+
+## Key Files to Understand
+
+1. **src/risk/rules.py** - Risk rule definitions for all 41 CUAD categories
+2. **src/risk/assessor.py** - Hybrid scoring engine with LLM integration
+3. **src/portfolio/analyzer.py** - Cross-contract analysis logic
+4. **src/api/routes.py** - All REST endpoints
+5. **streamlit_app.py** - Dashboard UI implementation
+6. **src/pipeline.py** - Core analysis pipeline
+
+## Performance Notes
+
+- Classifier initialization loads sentence-transformers model (~2-3s)
+- LLM calls add ~2-5s per clause for risk analysis
+- Use `--no-llm` flag for faster rule-only assessment
+- Portfolio analysis scales linearly with contract count
