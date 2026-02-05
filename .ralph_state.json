@@ -1,0 +1,54 @@
+{
+  "L0_config_merge": {
+    "status": "completed",
+    "completed_at": "2026-02-05T16:41:36.480323+00:00"
+  },
+  "L0_embedding_service": {
+    "status": "completed",
+    "completed_at": "2026-02-05T16:41:36.883880+00:00"
+  },
+  "L0_llm_service": {
+    "status": "completed",
+    "completed_at": "2026-02-05T16:41:37.246958+00:00"
+  },
+  "L1_extraction": {
+    "status": "completed",
+    "completed_at": "2026-02-05T16:41:37.638731+00:00"
+  },
+  "L2_resolver": {
+    "status": "completed",
+    "completed_at": "2026-02-05T16:41:38.100957+00:00"
+  },
+  "L3_aggregator": {
+    "status": "completed",
+    "completed_at": "2026-02-05T16:41:38.425751+00:00"
+  },
+  "L4_search": {
+    "status": "completed",
+    "completed_at": "2026-02-05T16:41:38.722280+00:00"
+  },
+  "L5_query": {
+    "status": "completed",
+    "completed_at": "2026-02-05T16:41:39.025117+00:00"
+  },
+  "L6_pipeline": {
+    "status": "completed",
+    "completed_at": "2026-02-05T16:41:39.347435+00:00"
+  },
+  "L6_api": {
+    "status": "completed",
+    "completed_at": "2026-02-05T16:41:39.651044+00:00"
+  },
+  "L6_streamlit": {
+    "status": "completed",
+    "completed_at": "2026-02-05T16:41:40.015577+00:00"
+  },
+  "L6_cli": {
+    "status": "completed",
+    "completed_at": "2026-02-05T16:41:40.340098+00:00"
+  },
+  "L6_cleanup": {
+    "status": "completed",
+    "completed_at": "2026-02-05T16:52:05.521966+00:00"
+  }
+}

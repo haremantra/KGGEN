@@ -1,0 +1,96 @@
+# RALPH Loop Task Manifest — KGGEN Codebase Merge
+# R(ead) A(nalyze) L(ayout) P(roduce) H(alt/Handoff)
+
+tasks:
+  L0_config_merge:
+    layer: 0
+    description: "Extend src/config.py with embedding, LLM, resolution, search, aggregation settings"
+    file: src/config.py
+    action: modify
+    depends_on: []
+
+  L0_embedding_service:
+    layer: 0
+    description: "Create src/utils/embedding.py — S-BERT embedding service with cache backends"
+    file: src/utils/embedding.py
+    action: create
+    depends_on: [L0_config_merge]
+
+  L0_llm_service:
+    layer: 0
+    description: "Create src/utils/llm.py — LLM service with tenacity retry and fallback"
+    file: src/utils/llm.py
+    action: create
+    depends_on: [L0_config_merge]
+
+  L1_extraction:
+    layer: 1
+    description: "Upgrade src/extraction/extractor.py with chunking, dedup, categorical confidence"
+    file: src/extraction/extractor.py
+    action: modify
+    depends_on: [L0_llm_service, L0_embedding_service]
+
+  L2_resolver:
+    layer: 2
+    description: "Create src/resolution/resolver.py — adaptive clustering + LLM canonical selection"
+    file: src/resolution/resolver.py
+    action: create
+    depends_on: [L0_embedding_service, L0_llm_service]
+
+  L3_aggregator:
+    layer: 3
+    description: "Create src/aggregation/aggregator.py — per-type dedup thresholds, party normalization"
+    file: src/aggregation/aggregator.py
+    action: create
+    depends_on: [L0_embedding_service, L2_resolver]
+
+  L4_search:
+    layer: 4
+    description: "Create src/search/ — hybrid BM25+semantic search with InMemory size guards"
+    file: src/search/
+    action: create
+    depends_on: [L0_embedding_service]
+
+  L5_query:
+    layer: 5
+    description: "Create src/query/ — RAG query service with specialized queries"
+    file: src/query/
+    action: create
+    depends_on: [L4_search, L0_llm_service]
+
+  L6_pipeline:
+    layer: 6
+    description: "Wire resolution + search into src/pipeline.py"
+    file: src/pipeline.py
+    action: modify
+    depends_on: [L2_resolver, L4_search]
+
+  L6_api:
+    layer: 6
+    description: "Add search/query/resolve API endpoints to src/api/routes.py"
+    file: src/api/routes.py
+    action: modify
+    depends_on: [L5_query, L4_search, L2_resolver]
+
+  L6_streamlit:
+    layer: 6
+    description: "Add Search & QA page to streamlit_app.py"
+    file: streamlit_app.py
+    action: modify
+    depends_on: [L5_query, L4_search]
+
+  L6_cli:
+    layer: 6
+    description: "Add search, query, resolve CLI commands to src/main.py"
+    file: src/main.py
+    action: modify
+    depends_on: [L5_query, L4_search, L2_resolver]
+
+  L6_cleanup:
+    layer: 6
+    description: "Archive src/kggen_cuad/ to archive/kggen_cuad_pre_merge/"
+    file: src/kggen_cuad/
+    action: archive
+    depends_on: [L6_pipeline, L6_api, L6_streamlit, L6_cli]
+    halt: true
+    halt_reason: "Requires human confirmation before archiving"

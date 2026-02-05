@@ -51,9 +51,10 @@ dependencies = [
     # Search
     "elasticsearch>=8.16.0",
 
-    # Data Processing
+    # Data Processing & ML
     "pandas>=2.2.0",
     "numpy>=2.0.0",
+    "scikit-learn>=1.5.0",
 
     # Utilities
     "python-dotenv>=1.0.0",

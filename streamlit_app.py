@@ -68,7 +68,7 @@ def risk_badge(level: str) -> str:
 st.sidebar.title("📜 KGGEN Analyzer")
 page = st.sidebar.radio(
     "Navigation",
-    ["Upload", "Portfolio", "Analysis", "Compare", "Gaps"],
+    ["Upload", "Portfolio", "Analysis", "Compare", "Gaps", "Dependencies", "Search & QA"],
     index=0,
 )
 
@@ -504,6 +504,311 @@ elif page == "Gaps":
 
                 df = pd.DataFrame(matrix_data)
                 st.dataframe(df, use_container_width=True, hide_index=True)
+
+
+# === Page: Dependencies ===
+elif page == "Dependencies":
+    st.title("Dependencies")
+    st.markdown("Analyze clause interdependencies within a contract.")
+
+    # Select contract
+    contracts = api_request("GET", "/contracts")
+    if contracts:
+        analyzed = [c for c in contracts if c.get("status") == "analyzed"]
+        if not analyzed:
+            st.info("No analyzed contracts. Upload and analyze a contract first.")
+        else:
+            options = {c["contract_id"]: f"{c['filename']} ({c['contract_id']})" for c in analyzed}
+            selected_id = st.selectbox(
+                "Select Contract",
+                list(options.keys()),
+                format_func=lambda x: options[x],
+            )
+
+            if selected_id:
+                deps = api_request("GET", f"/contracts/{selected_id}/dependencies")
+
+                if deps:
+                    # Top metrics row
+                    col1, col2, col3, col4 = st.columns(4)
+                    col1.metric("Total Dependencies", len(deps.get("edges", [])))
+                    col2.metric("Contradictions", deps.get("contradiction_count", 0))
+                    col3.metric("Missing Requirements", len(deps.get("missing_requirements", [])))
+                    col4.metric("Most Connected", deps.get("max_impact_clause", "N/A"))
+
+                    st.markdown("---")
+
+                    # Interactive network graph
+                    st.subheader("Dependency Network")
+
+                    nodes = deps.get("nodes", [])
+                    edges = deps.get("edges", [])
+
+                    if nodes and edges:
+                        import networkx as nx
+
+                        # Build graph for layout
+                        G = nx.DiGraph()
+                        for n in nodes:
+                            G.add_node(n["label"])
+                        for e in edges:
+                            G.add_edge(e["source_label"], e["target_label"])
+
+                        pos = nx.spring_layout(G, k=2.0, iterations=50, seed=42)
+
+                        # Edge colors by dependency type
+                        type_colors = {
+                            "CONFLICTS_WITH": "#ff4444",
+                            "REQUIRES": "#ff8800",
+                            "MITIGATES": "#44aa44",
+                            "DEPENDS_ON": "#4488ff",
+                            "RESTRICTS": "#888888",
+                            "MODIFIES": "#aa44ff",
+                        }
+
+                        # Draw edges
+                        edge_traces = []
+                        for e in edges:
+                            src = e["source_label"]
+                            tgt = e["target_label"]
+                            if src in pos and tgt in pos:
+                                x0, y0 = pos[src]
+                                x1, y1 = pos[tgt]
+                                color = type_colors.get(e["dependency_type"], "#cccccc")
+                                edge_traces.append(go.Scatter(
+                                    x=[x0, x1, None], y=[y0, y1, None],
+                                    mode="lines",
+                                    line=dict(width=max(1, e.get("strength", 0.5) * 3), color=color),
+                                    hoverinfo="text",
+                                    text=f"{src} → {tgt}<br>{e['dependency_type']}<br>{e.get('reason', '')}",
+                                    showlegend=False,
+                                ))
+
+                        # Draw nodes
+                        centrality = nx.degree_centrality(G)
+                        node_x = [pos[n["label"]][0] for n in nodes if n["label"] in pos]
+                        node_y = [pos[n["label"]][1] for n in nodes if n["label"] in pos]
+                        node_text = [n["label"] for n in nodes if n["label"] in pos]
+                        node_size = [max(15, centrality.get(n["label"], 0) * 80) for n in nodes if n["label"] in pos]
+
+                        # Color by category
+                        cat_colors = {
+                            "general_information": "#667eea",
+                            "restrictive_covenants": "#f56565",
+                            "revenue_risks": "#ed8936",
+                            "intellectual_property": "#48bb78",
+                            "special_provisions": "#9f7aea",
+                        }
+                        node_color = [cat_colors.get(n.get("category", ""), "#999") for n in nodes if n["label"] in pos]
+
+                        node_trace = go.Scatter(
+                            x=node_x, y=node_y,
+                            mode="markers+text",
+                            text=node_text,
+                            textposition="top center",
+                            textfont=dict(size=9),
+                            marker=dict(size=node_size, color=node_color, line=dict(width=1, color="white")),
+                            hoverinfo="text",
+                            hovertext=[
+                                f"{n['label']}<br>Category: {n.get('category', 'N/A')}<br>"
+                                f"Confidence: {n.get('confidence', 0):.0%}<br>"
+                                f"Centrality: {centrality.get(n['label'], 0):.2f}"
+                                for n in nodes if n["label"] in pos
+                            ],
+                        )
+
+                        fig = go.Figure(data=edge_traces + [node_trace])
+                        fig.update_layout(
+                            height=600,
+                            showlegend=False,
+                            hovermode="closest",
+                            xaxis=dict(showgrid=False, zeroline=False, showticklabels=False),
+                            yaxis=dict(showgrid=False, zeroline=False, showticklabels=False),
+                            margin=dict(l=0, r=0, t=0, b=0),
+                        )
+
+                        # Legend for edge types
+                        legend_html = " ".join(
+                            f'<span style="color:{c}; font-weight:bold;">■</span> {t}'
+                            for t, c in type_colors.items()
+                        )
+                        st.markdown(f"<small>{legend_html}</small>", unsafe_allow_html=True)
+                        st.plotly_chart(fig, use_container_width=True)
+                    else:
+                        st.info("No dependencies detected in this contract.")
+
+                    # Tabs
+                    tab1, tab2, tab3, tab4 = st.tabs([
+                        "Contradictions", "Missing Requirements", "Impact Rankings", "All Dependencies"
+                    ])
+
+                    with tab1:
+                        contradictions = api_request("GET", f"/contracts/{selected_id}/contradictions")
+                        if contradictions and contradictions.get("contradictions"):
+                            for c in contradictions["contradictions"]:
+                                with st.expander(f"{c['clause_a']}  vs  {c['clause_b']}", expanded=False):
+                                    st.write(f"**Reason:** {c.get('reason', 'N/A')}")
+                                    st.write(f"**Strength:** {c.get('strength', 0):.0%}")
+                        else:
+                            st.success("No contradictions found.")
+
+                    with tab2:
+                        completeness = api_request("GET", f"/contracts/{selected_id}/completeness")
+                        if completeness and completeness.get("missing_requirements"):
+                            for m in completeness["missing_requirements"]:
+                                severity = m.get("severity", "MEDIUM")
+                                color = "#ff4444" if severity == "HIGH" else "#ff8800"
+                                st.markdown(
+                                    f'<span style="background:{color};color:white;padding:2px 8px;'
+                                    f'border-radius:4px;font-size:0.8em;">{severity}</span> '
+                                    f'**{m["missing_label"]}** required by {m["required_by"]}',
+                                    unsafe_allow_html=True,
+                                )
+                                st.write(f"  {m.get('impact', '')}")
+                                st.markdown("---")
+                        else:
+                            st.success("All required clauses are present.")
+
+                    with tab3:
+                        rankings = deps.get("recommendations", [])
+                        impact = []
+                        for e in edges:
+                            src = e["source_label"]
+                            found = next((i for i in impact if i["label"] == src), None)
+                            if found:
+                                found["count"] += 1
+                            else:
+                                impact.append({"label": src, "count": 1})
+                        impact.sort(key=lambda x: x["count"], reverse=True)
+
+                        if impact:
+                            df = pd.DataFrame(impact[:15])
+                            fig = px.bar(
+                                df, x="label", y="count",
+                                title="Outgoing Dependencies by Clause",
+                                labels={"label": "Clause", "count": "Dependencies"},
+                            )
+                            fig.update_layout(xaxis_tickangle=-45)
+                            st.plotly_chart(fig, use_container_width=True)
+
+                        # Impact explorer
+                        st.subheader("Impact Explorer")
+                        if nodes:
+                            explore_label = st.selectbox(
+                                "Select clause to explore impact",
+                                [n["label"] for n in nodes],
+                            )
+                            max_hops = st.slider("Max hops", 1, 5, 3)
+                            impact_data = api_request(
+                                "GET",
+                                f"/contracts/{selected_id}/impact/{explore_label}?max_hops={max_hops}",
+                            )
+                            if impact_data and impact_data.get("affected_clauses"):
+                                st.write(f"**{impact_data['total_affected']}** clauses affected "
+                                         f"(max depth: {impact_data['max_depth']})")
+                                for ac in impact_data["affected_clauses"]:
+                                    st.write(f"  - **{ac['label']}** (depth {ac['depth']}, "
+                                             f"via {ac['via']}, {ac['dependency_type']})")
+                            else:
+                                st.info("No downstream impact detected.")
+
+                    with tab4:
+                        if edges:
+                            # Type filter
+                            all_types = list(set(e["dependency_type"] for e in edges))
+                            selected_types = st.multiselect(
+                                "Filter by type", all_types, default=all_types
+                            )
+                            filtered = [e for e in edges if e["dependency_type"] in selected_types]
+
+                            df = pd.DataFrame(filtered)
+                            display_cols = ["source_label", "target_label", "dependency_type",
+                                            "strength", "reason"]
+                            available = [c for c in display_cols if c in df.columns]
+                            st.dataframe(df[available], use_container_width=True, hide_index=True)
+                        else:
+                            st.info("No dependencies to display.")
+
+                    # Recommendations
+                    recs = deps.get("recommendations", [])
+                    if recs:
+                        st.subheader("Recommendations")
+                        for i, rec in enumerate(recs, 1):
+                            st.write(f"{i}. {rec}")
+    else:
+        st.warning("Cannot connect to API server.")
+
+
+elif page == "Search & QA":
+    st.header("Search & QA")
+    st.markdown("Search the knowledge graph and ask questions about your contracts.")
+
+    tab1, tab2 = st.tabs(["Search", "Ask a Question"])
+
+    with tab1:
+        search_query = st.text_input("Search entities and relationships", placeholder="e.g., liability cap, license grant")
+
+        if search_query:
+            col1, col2 = st.columns(2)
+
+            with col1:
+                st.subheader("Entities")
+                entity_results = api_request("POST", "/search/entities", json={"query": search_query, "limit": 10})
+                if entity_results and entity_results.get("results"):
+                    for r in entity_results["results"]:
+                        p = r["payload"]
+                        st.markdown(f"**{p.get('name', '')}** ({p.get('entity_type', '')}) — score: {r['score']:.3f}")
+                else:
+                    st.info("No entity results. Upload and analyze contracts first.")
+
+            with col2:
+                st.subheader("Relationships")
+                triple_results = api_request("POST", "/search/triples", json={"query": search_query, "limit": 10})
+                if triple_results and triple_results.get("results"):
+                    for r in triple_results["results"]:
+                        p = r["payload"]
+                        pred = p.get('predicate', '').replace('_', ' ').lower()
+                        st.markdown(f"**{p.get('subject', '')}** {pred} **{p.get('object', '')}** — score: {r['score']:.3f}")
+                else:
+                    st.info("No relationship results.")
+
+    with tab2:
+        st.subheader("Ask a Question")
+        suggested = [
+            "Who are the parties to this contract?",
+            "What IP rights are licensed?",
+            "What are the key obligations?",
+            "What are the liability caps?",
+            "What is the governing law?",
+        ]
+
+        selected_suggestion = st.selectbox("Suggested questions", ["(Type your own)"] + suggested)
+
+        if selected_suggestion != "(Type your own)":
+            question = selected_suggestion
+        else:
+            question = st.text_input("Your question", placeholder="Ask anything about the contracts...")
+
+        if question and st.button("Get Answer"):
+            with st.spinner("Retrieving context and generating answer..."):
+                result = api_request("POST", "/query", json={"question": question})
+
+            if result:
+                confidence = result.get("confidence", 0)
+                conf_color = "green" if confidence >= 0.7 else "orange" if confidence >= 0.4 else "red"
+
+                st.markdown(f"**Confidence:** :{conf_color}[{confidence:.0%}]")
+                st.markdown("### Answer")
+                st.write(result.get("answer", "No answer available"))
+
+                sources = result.get("sources", [])
+                if sources:
+                    with st.expander(f"Sources ({len(sources)})"):
+                        for s in sources:
+                            pred = s.get('predicate', '').replace('_', ' ').lower()
+                            st.markdown(f"- {s.get('subject', '')} {pred} {s.get('object', '')}")
+            else:
+                st.error("Failed to get answer. Ensure the API is running and contracts are indexed.")
 
 
 # Footer

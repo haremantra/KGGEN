@@ -11,6 +11,8 @@ from pydantic import BaseModel, Field
 from ..pipeline import ContractAnalysisPipeline, ContractAnalysis
 from ..risk.assessor import RiskAssessor, RiskAssessment
 from ..portfolio.analyzer import PortfolioAnalyzer, PortfolioAnalysis
+from ..interdependency.analyzer import InterdependencyAnalyzer
+from ..interdependency.types import InterdependencyReport
 
 
 router = APIRouter(tags=["contracts"])
@@ -19,11 +21,13 @@ router = APIRouter(tags=["contracts"])
 _contract_store: dict[str, dict] = {}
 _analysis_store: dict[str, ContractAnalysis] = {}
 _risk_store: dict[str, RiskAssessment] = {}
+_interdependency_store: dict[str, InterdependencyReport] = {}
 
 # Lazy-loaded pipeline and assessor
 _pipeline: ContractAnalysisPipeline | None = None
 _risk_assessor: RiskAssessor | None = None
 _portfolio_analyzer: PortfolioAnalyzer | None = None
+_interdependency_analyzer: InterdependencyAnalyzer | None = None
 
 
 def get_pipeline() -> ContractAnalysisPipeline:
@@ -49,6 +53,14 @@ def get_portfolio_analyzer() -> PortfolioAnalyzer:
     if _portfolio_analyzer is None:
         _portfolio_analyzer = PortfolioAnalyzer(use_llm=True)
     return _portfolio_analyzer
+
+
+def get_interdependency_analyzer() -> InterdependencyAnalyzer:
+    """Get or create the interdependency analyzer."""
+    global _interdependency_analyzer
+    if _interdependency_analyzer is None:
+        _interdependency_analyzer = InterdependencyAnalyzer(use_llm=True)
+    return _interdependency_analyzer
 
 
 # === Pydantic Models ===
@@ -158,9 +170,27 @@ async def upload_contract(
             assessor = get_risk_assessor()
             risk = assessor.assess(analysis)
 
+            # Run interdependency analysis
+            dep_analyzer = get_interdependency_analyzer()
+            dep_report = dep_analyzer.analyze(analysis)
+
+            # Adjust risk score based on interdependency findings
+            if dep_report.risk_score_adjustment > 0:
+                adjusted = min(100, risk.overall_risk_score + dep_report.risk_score_adjustment)
+                risk.overall_risk_score = adjusted
+                if adjusted >= 75:
+                    risk.risk_level = "CRITICAL"
+                elif adjusted >= 50:
+                    risk.risk_level = "HIGH"
+                elif adjusted >= 25:
+                    risk.risk_level = "MEDIUM"
+                else:
+                    risk.risk_level = "LOW"
+
             # Store results
             _analysis_store[contract_id] = analysis
             _risk_store[contract_id] = risk
+            _interdependency_store[contract_id] = dep_report
             _contract_store[contract_id]["status"] = "analyzed"
 
             # Clean up temp file
@@ -272,6 +302,7 @@ async def delete_contract(contract_id: str):
     del _contract_store[contract_id]
     _analysis_store.pop(contract_id, None)
     _risk_store.pop(contract_id, None)
+    _interdependency_store.pop(contract_id, None)
 
     return {"status": "deleted", "contract_id": contract_id}
 
@@ -367,3 +398,202 @@ async def get_clause_coverage(label: str):
         raise HTTPException(404, f"Clause label '{label}' not recognized")
 
     return portfolio.clause_coverage[label].to_dict()
+
+
+# === Interdependency Endpoints ===
+
+class DependencyGraphResponse(BaseModel):
+    """Full dependency graph response."""
+    contract_id: str
+    nodes: list[dict]
+    edges: list[dict]
+    contradiction_count: int
+    missing_requirements: list[dict]
+    max_impact_clause: str
+    recommendations: list[str]
+    risk_score_adjustment: int
+
+
+class ImpactResponse(BaseModel):
+    """Impact analysis response for a specific clause."""
+    source_label: str
+    affected_clauses: list[dict]
+    total_affected: int
+    max_depth: int
+
+
+class ContradictionResponse(BaseModel):
+    """Contradiction list response."""
+    contract_id: str
+    contradictions: list[dict]
+    count: int
+
+
+class CompletenessResponse(BaseModel):
+    """Missing requirements / completeness response."""
+    contract_id: str
+    missing_requirements: list[dict]
+    count: int
+
+
+@router.get("/contracts/{contract_id}/dependencies", response_model=DependencyGraphResponse)
+async def get_dependencies(contract_id: str):
+    """Get full dependency graph for a contract."""
+    if contract_id not in _contract_store:
+        raise HTTPException(404, f"Contract {contract_id} not found")
+
+    if contract_id not in _interdependency_store:
+        raise HTTPException(400, f"Contract {contract_id} has no interdependency analysis")
+
+    report = _interdependency_store[contract_id]
+    graph = report.graph
+
+    return DependencyGraphResponse(
+        contract_id=contract_id,
+        nodes=[n.to_dict() for n in graph.nodes],
+        edges=[e.to_dict() for e in graph.edges],
+        contradiction_count=graph.contradiction_count,
+        missing_requirements=[m.to_dict() for m in graph.missing_requirements],
+        max_impact_clause=graph.max_impact_clause,
+        recommendations=report.recommendations,
+        risk_score_adjustment=report.risk_score_adjustment,
+    )
+
+
+@router.get("/contracts/{contract_id}/impact/{label}", response_model=ImpactResponse)
+async def get_impact(
+    contract_id: str,
+    label: str,
+    max_hops: int = Query(3, ge=1, le=10, description="Maximum traversal depth"),
+):
+    """Get impact analysis for a specific clause label."""
+    if contract_id not in _contract_store:
+        raise HTTPException(404, f"Contract {contract_id} not found")
+
+    if contract_id not in _interdependency_store:
+        raise HTTPException(400, f"Contract {contract_id} has no interdependency analysis")
+
+    # Re-run impact analysis with the requested max_hops
+    analyzer = get_interdependency_analyzer()
+    impact = analyzer.graph_builder.impact_analysis(label, max_hops=max_hops)
+
+    return ImpactResponse(
+        source_label=impact.source_label,
+        affected_clauses=impact.affected_clauses,
+        total_affected=impact.total_affected,
+        max_depth=impact.max_depth,
+    )
+
+
+@router.get("/contracts/{contract_id}/contradictions", response_model=ContradictionResponse)
+async def get_contradictions(contract_id: str):
+    """Get all contradictions found in a contract."""
+    if contract_id not in _contract_store:
+        raise HTTPException(404, f"Contract {contract_id} not found")
+
+    if contract_id not in _interdependency_store:
+        raise HTTPException(400, f"Contract {contract_id} has no interdependency analysis")
+
+    report = _interdependency_store[contract_id]
+
+    return ContradictionResponse(
+        contract_id=contract_id,
+        contradictions=report.contradictions,
+        count=len(report.contradictions),
+    )
+
+
+@router.get("/contracts/{contract_id}/completeness", response_model=CompletenessResponse)
+async def get_completeness(contract_id: str):
+    """Get missing required clauses for a contract."""
+    if contract_id not in _contract_store:
+        raise HTTPException(404, f"Contract {contract_id} not found")
+
+    if contract_id not in _interdependency_store:
+        raise HTTPException(400, f"Contract {contract_id} has no interdependency analysis")
+
+    report = _interdependency_store[contract_id]
+
+    return CompletenessResponse(
+        contract_id=contract_id,
+        missing_requirements=[m.to_dict() for m in report.missing_requirements],
+        count=len(report.missing_requirements),
+    )
+
+
+# === Search & Query Endpoints ===
+
+class SearchRequest(BaseModel):
+    """Search request."""
+    query: str = Field(..., description="Search query text")
+    limit: int = Field(10, ge=1, le=100, description="Max results")
+    kind: Optional[str] = Field(None, description="'entity' or 'triple'")
+
+
+class QueryRequest(BaseModel):
+    """Query request for RAG-based Q&A."""
+    question: str = Field(..., description="Question to answer")
+
+
+class CompareQueryRequest(BaseModel):
+    """Request to compare contracts via query."""
+    aspect: str = Field("all", description="Aspect to compare: licensing, obligations, restrictions, liability, all")
+
+
+@router.post("/search/entities")
+async def search_entities(request: SearchRequest):
+    """Search for entities in the knowledge graph."""
+    from ..search.service import get_search_service
+    search = get_search_service()
+    results = search.search_entities(request.query, limit=request.limit)
+    return {
+        "query": request.query,
+        "results": [{"payload": p, "score": s} for p, s in results],
+        "count": len(results),
+    }
+
+
+@router.post("/search/triples")
+async def search_triples(request: SearchRequest):
+    """Search for triples in the knowledge graph."""
+    from ..search.service import get_search_service
+    search = get_search_service()
+    results = search.search_triples(request.query, limit=request.limit)
+    return {
+        "query": request.query,
+        "results": [{"payload": p, "score": s} for p, s in results],
+        "count": len(results),
+    }
+
+
+@router.post("/query")
+async def answer_query(request: QueryRequest):
+    """Answer a question about contracts using RAG."""
+    from ..query.service import get_query_service
+    query_svc = get_query_service()
+    response = query_svc.query(request.question)
+    return response.to_dict()
+
+
+@router.get("/contracts/{contract_id}/qa")
+async def contract_qa(
+    contract_id: str,
+    q: str = Query(..., description="Question about this contract"),
+):
+    """Answer a question about a specific contract."""
+    if contract_id not in _contract_store:
+        raise HTTPException(404, f"Contract {contract_id} not found")
+
+    from ..query.service import get_query_service
+    query_svc = get_query_service()
+    response = query_svc.query(q)
+    return response.to_dict()
+
+
+@router.post("/query/compare")
+async def compare_via_query(request: CompareQueryRequest):
+    """Compare contracts on a specific aspect using RAG."""
+    from ..query.service import get_query_service
+    query_svc = get_query_service()
+    response = query_svc.compare(request.aspect)
+    return response.to_dict()

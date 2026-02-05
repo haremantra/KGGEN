@@ -291,7 +291,10 @@ def analyze_contract_file(
     output_path: str = None,
     include_risk: bool = True,
     use_llm_risk: bool = True,
-) -> tuple["ContractAnalysis", "RiskAssessment | None"]:
+    include_dependencies: bool = True,
+    include_resolution: bool = False,
+    index_for_search: bool = False,
+) -> tuple["ContractAnalysis", "RiskAssessment | None", "InterdependencyReport | None"]:
     """Analyze a contract file and optionally save results.
 
     Args:
@@ -299,9 +302,12 @@ def analyze_contract_file(
         output_path: Optional path to save JSON results
         include_risk: Whether to run risk assessment
         use_llm_risk: Whether to use LLM for complex risk analysis
+        include_dependencies: Whether to run interdependency analysis
+        include_resolution: Whether to run entity resolution
+        index_for_search: Whether to index entities/triples in search service
 
     Returns:
-        Tuple of (ContractAnalysis, RiskAssessment or None)
+        Tuple of (ContractAnalysis, RiskAssessment or None, InterdependencyReport or None)
     """
     from .utils.pdf_reader import extract_text_from_pdf
 
@@ -326,6 +332,62 @@ def analyze_contract_file(
         risk_assessment = assessor.assess(result)
         print(f"\nRisk Assessment: {risk_assessment.overall_risk_score}/100 ({risk_assessment.risk_level})")
         print(f"  {risk_assessment.summary}")
+
+    # Run interdependency analysis
+    dep_report = None
+    if include_dependencies:
+        from .interdependency.analyzer import InterdependencyAnalyzer
+        from .interdependency.types import InterdependencyReport
+        dep_analyzer = InterdependencyAnalyzer(use_llm=use_llm_risk)
+        dep_report = dep_analyzer.analyze(result)
+
+        # Adjust risk score
+        if risk_assessment and dep_report.risk_score_adjustment > 0:
+            adjusted = min(100, risk_assessment.overall_risk_score + dep_report.risk_score_adjustment)
+            risk_assessment.overall_risk_score = adjusted
+            if adjusted >= 75:
+                risk_assessment.risk_level = "CRITICAL"
+            elif adjusted >= 50:
+                risk_assessment.risk_level = "HIGH"
+            elif adjusted >= 25:
+                risk_assessment.risk_level = "MEDIUM"
+            else:
+                risk_assessment.risk_level = "LOW"
+            print(f"  Risk adjusted by +{dep_report.risk_score_adjustment} due to interdependencies → {adjusted}/100")
+
+        print(f"\nInterdependency Analysis:")
+        print(f"  Dependencies: {len(dep_report.graph.edges)}")
+        print(f"  Contradictions: {len(dep_report.contradictions)}")
+        print(f"  Missing requirements: {len(dep_report.missing_requirements)}")
+
+    # Run entity resolution (optional)
+    if include_resolution:
+        try:
+            from .resolution import analysis_to_entities_triples
+            from .resolution.resolver import EntityResolver
+            entities, triples = analysis_to_entities_triples(result)
+            if entities:
+                resolver = EntityResolver(use_llm=use_llm_risk)
+                resolution = resolver.resolve(entities, triples)
+                print(f"\nEntity Resolution: {resolution.original_count} → {resolution.resolved_count} entities")
+                if output_path:
+                    # Will be added to output_data below
+                    pass
+
+                # Index in search service if requested
+                if index_for_search:
+                    from .search.service import get_search_service
+                    search = get_search_service()
+                    for entity in resolution.resolved_entities:
+                        search.index_entity(entity.id, entity.name, entity.type.value)
+                    for triple in resolution.resolved_triples:
+                        search.index_triple(
+                            f"{triple.subject}:{triple.predicate}:{triple.object}",
+                            triple.subject, triple.predicate, triple.object,
+                        )
+                    print(f"  Indexed {len(resolution.resolved_entities)} entities and {len(resolution.resolved_triples)} triples for search")
+        except Exception as e:
+            print(f"  Resolution error: {e}")
 
     # Save if requested
     if output_path:
@@ -354,8 +416,12 @@ def analyze_contract_file(
         if risk_assessment:
             output_data["risk_assessment"] = risk_assessment.to_dict()
 
+        # Add interdependency report to output
+        if dep_report:
+            output_data["interdependency"] = dep_report.to_dict()
+
         with open(output_path, 'w') as f:
             json.dump(output_data, f, indent=2)
         print(f"Results saved to: {output_path}")
 
-    return result, risk_assessment
+    return result, risk_assessment, dep_report

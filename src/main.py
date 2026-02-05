@@ -181,7 +181,7 @@ def cmd_analyze(args):
     print(f"Analyzing: {file_path}")
 
     # Run full pipeline
-    analysis, risk = analyze_contract_file(
+    analysis, risk, dep_report = analyze_contract_file(
         str(file_path),
         output_path=args.output,
         include_risk=True,
@@ -200,6 +200,11 @@ def cmd_analyze(args):
         print(f"\nRisk Score: {risk.overall_risk_score}/100 ({risk.risk_level})")
         print(f"Findings: {len(risk.findings)}")
         print(f"Missing protections: {len(risk.missing_clause_risks)}")
+
+    if dep_report:
+        print(f"\nDependencies: {len(dep_report.graph.edges)}")
+        print(f"Contradictions: {len(dep_report.contradictions)}")
+        print(f"Missing requirements: {len(dep_report.missing_requirements)}")
 
     if args.output:
         print(f"\nResults saved to: {args.output}")
@@ -294,6 +299,204 @@ def cmd_risks(args):
         with open(output_path, "w") as f:
             json.dump(risk.to_dict(), f, indent=2)
         print(f"\nResults saved to: {output_path}")
+
+
+def cmd_dependencies(args):
+    """Show clause interdependency analysis for a contract."""
+    from .pipeline import ContractAnalysisPipeline
+    from .interdependency.analyzer import InterdependencyAnalyzer
+
+    file_path = Path(args.pdf_path)
+
+    if not file_path.exists():
+        print(f"Error: File not found: {file_path}")
+        sys.exit(1)
+
+    print(f"Analyzing dependencies: {file_path}")
+
+    # Read file
+    if file_path.suffix.lower() == '.pdf':
+        contract_text = extract_text_from_pdf(file_path)
+    else:
+        with open(file_path, 'r', encoding='utf-8', errors='ignore') as f:
+            contract_text = f.read()
+
+    # Run classification pipeline
+    pipeline = ContractAnalysisPipeline()
+    analysis = pipeline.analyze(contract_text, contract_id=file_path.stem)
+
+    # Run interdependency analysis
+    analyzer = InterdependencyAnalyzer(use_llm=not args.no_llm)
+    report = analyzer.analyze(analysis)
+
+    # Print results
+    print(f"\n{'='*60}")
+    print(f"CLAUSE INTERDEPENDENCY ANALYSIS: {file_path.name}")
+    print(f"{'='*60}")
+
+    print(f"\nDependencies found: {len(report.graph.edges)}")
+    print(f"Contradictions: {len(report.contradictions)}")
+    print(f"Missing requirements: {len(report.missing_requirements)}")
+    print(f"Circular dependencies: {len(report.cycles)}")
+    print(f"Risk score adjustment: +{report.risk_score_adjustment}")
+
+    # Contradictions
+    if report.contradictions:
+        print(f"\n{'='*60}")
+        print("CONTRADICTIONS")
+        print(f"{'='*60}")
+        for c in report.contradictions:
+            print(f"\n  {c['clause_a']}  <-->  {c['clause_b']}")
+            print(f"    Reason: {c['reason']}")
+            print(f"    Strength: {c['strength']:.0%}")
+
+    # Missing requirements
+    if report.missing_requirements:
+        print(f"\n{'='*60}")
+        print("MISSING REQUIREMENTS")
+        print(f"{'='*60}")
+        for m in report.missing_requirements:
+            print(f"\n  [{m.severity}] {m.missing_label}")
+            print(f"    Required by: {m.required_by}")
+            print(f"    Impact: {m.impact}")
+
+    # Impact rankings
+    if report.impact_rankings:
+        print(f"\n{'='*60}")
+        print("IMPACT RANKINGS (top 10)")
+        print(f"{'='*60}")
+        for r in report.impact_rankings[:10]:
+            if r["total_affected"] > 0:
+                affected = ", ".join(r["affected_clauses"][:5])
+                more = f" +{r['total_affected'] - 5} more" if r["total_affected"] > 5 else ""
+                print(f"\n  {r['label']} → affects {r['total_affected']} clauses")
+                print(f"    {affected}{more}")
+
+    # Recommendations
+    if report.recommendations:
+        print(f"\n{'='*60}")
+        print("RECOMMENDATIONS")
+        print(f"{'='*60}")
+        for i, rec in enumerate(report.recommendations, 1):
+            print(f"\n  {i}. {rec}")
+
+    # Save if requested
+    if args.output:
+        output_path = Path(args.output)
+        with open(output_path, "w") as f:
+            json.dump(report.to_dict(), f, indent=2)
+        print(f"\nResults saved to: {output_path}")
+
+
+def cmd_resolve(args):
+    """Run entity resolution on a contract."""
+    from .pipeline import ContractAnalysisPipeline
+    from .resolution import analysis_to_entities_triples
+    from .resolution.resolver import EntityResolver
+
+    file_path = Path(args.pdf_path)
+
+    if not file_path.exists():
+        print(f"Error: File not found: {file_path}")
+        sys.exit(1)
+
+    print(f"Resolving entities: {file_path}")
+
+    # Read file
+    if file_path.suffix.lower() == '.pdf':
+        contract_text = extract_text_from_pdf(file_path)
+    else:
+        with open(file_path, 'r', encoding='utf-8', errors='ignore') as f:
+            contract_text = f.read()
+
+    # Run analysis pipeline
+    pipeline = ContractAnalysisPipeline()
+    analysis = pipeline.analyze(contract_text, contract_id=file_path.stem)
+
+    # Convert to entities/triples
+    entities, triples = analysis_to_entities_triples(analysis)
+
+    if not entities:
+        print("No entities found to resolve.")
+        return
+
+    # Run resolution
+    resolver = EntityResolver(use_llm=not args.no_llm)
+    result = resolver.resolve(entities, triples)
+
+    print(f"\n{'='*60}")
+    print(f"ENTITY RESOLUTION: {file_path.name}")
+    print(f"{'='*60}")
+    print(f"Original entities: {result.original_count}")
+    print(f"Resolved entities: {result.resolved_count}")
+    print(f"Reduction: {1 - result.resolved_count / max(result.original_count, 1):.1%}")
+    print(f"Alias groups: {len(result.alias_mapping)}")
+
+    if result.alias_mapping:
+        print(f"\n--- Alias Groups ---")
+        for canonical_id, aliases in list(result.alias_mapping.items())[:10]:
+            entity = next((e for e in result.resolved_entities if e.id == canonical_id), None)
+            if entity:
+                print(f"  {entity.name} <- {aliases}")
+
+    if args.output:
+        output_path = Path(args.output)
+        with open(output_path, "w") as f:
+            json.dump(result.to_dict(), f, indent=2)
+        print(f"\nResults saved to: {output_path}")
+
+
+def cmd_search(args):
+    """Search the knowledge graph."""
+    from .search.service import get_search_service
+
+    search = get_search_service()
+    query = args.query
+
+    print(f"Searching: \"{query}\"")
+
+    # Search entities
+    entity_results = search.search_entities(query, limit=args.limit)
+    triple_results = search.search_triples(query, limit=args.limit)
+
+    if not entity_results and not triple_results:
+        print("No results found. Index contracts first with: analyze --resolve --index")
+        return
+
+    if entity_results:
+        print(f"\n--- Entities ({len(entity_results)} results) ---")
+        for payload, score in entity_results:
+            print(f"  [{score:.3f}] {payload.get('name', '')} ({payload.get('entity_type', '')})")
+
+    if triple_results:
+        print(f"\n--- Triples ({len(triple_results)} results) ---")
+        for payload, score in triple_results:
+            pred = payload.get('predicate', '').replace('_', ' ').lower()
+            print(f"  [{score:.3f}] {payload.get('subject', '')} {pred} {payload.get('object', '')}")
+
+
+def cmd_query(args):
+    """Answer a question about contracts using RAG."""
+    from .query.service import get_query_service
+
+    query_svc = get_query_service()
+    question = args.question
+
+    print(f"Question: \"{question}\"")
+    print("Retrieving context and generating answer...")
+
+    response = query_svc.query(question)
+
+    print(f"\n{'='*60}")
+    print(f"ANSWER (confidence: {response.confidence:.0%})")
+    print(f"{'='*60}")
+    print(f"\n{response.answer}")
+
+    if response.sources:
+        print(f"\n--- Sources ({len(response.sources)}) ---")
+        for s in response.sources[:5]:
+            pred = s.get('predicate', '').replace('_', ' ').lower()
+            print(f"  {s.get('subject', '')} {pred} {s.get('object', '')}")
 
 
 def cmd_portfolio(args):
@@ -519,6 +722,45 @@ def main():
         "--no-llm", action="store_true", help="Disable LLM for risk analysis"
     )
     risks_parser.set_defaults(func=cmd_risks)
+
+    # Dependencies command
+    deps_parser = subparsers.add_parser(
+        "dependencies", help="Analyze clause interdependencies in a contract"
+    )
+    deps_parser.add_argument("pdf_path", help="Path to the contract file")
+    deps_parser.add_argument("-o", "--output", help="Output JSON file path")
+    deps_parser.add_argument(
+        "--no-llm", action="store_true", help="Disable LLM validation of dependencies"
+    )
+    deps_parser.set_defaults(func=cmd_dependencies)
+
+    # Resolve command
+    resolve_parser = subparsers.add_parser(
+        "resolve", help="Run entity resolution on a contract"
+    )
+    resolve_parser.add_argument("pdf_path", help="Path to the contract file")
+    resolve_parser.add_argument("-o", "--output", help="Output JSON file path")
+    resolve_parser.add_argument(
+        "--no-llm", action="store_true", help="Disable LLM for canonical selection"
+    )
+    resolve_parser.set_defaults(func=cmd_resolve)
+
+    # Search command
+    search_parser = subparsers.add_parser(
+        "search", help="Search the knowledge graph"
+    )
+    search_parser.add_argument("query", help="Search query text")
+    search_parser.add_argument(
+        "-l", "--limit", type=int, default=10, help="Max results (default: 10)"
+    )
+    search_parser.set_defaults(func=cmd_search)
+
+    # Query command
+    query_parser = subparsers.add_parser(
+        "query", help="Answer a question about contracts using RAG"
+    )
+    query_parser.add_argument("question", help="Question to answer")
+    query_parser.set_defaults(func=cmd_query)
 
     # Portfolio command
     portfolio_parser = subparsers.add_parser(
