@@ -4,9 +4,33 @@ Combines rule-based scoring for known patterns with LLM assessment
 for complex or ambiguous clauses.
 """
 
+import re
 import json
 from dataclasses import dataclass, field
 from anthropic import Anthropic
+
+
+# Patterns indicating mutual/bilateral language in liability clauses
+MUTUAL_LIABILITY_PATTERNS = [
+    r'\beither\s+party\b',
+    r'\bneither\s+party\b',
+    r'\bboth\s+parties\b',
+    r'\beach\s+party\b',
+    r'\bno\s+party\b',
+    r'\bthe\s+parties\b',
+    r'\bmutual(?:ly)?\b',
+]
+
+
+def _has_mutual_language(text: str) -> bool:
+    """Check if clause text contains mutual/bilateral language."""
+    if not text:
+        return False
+    text_lower = text.lower()
+    for pattern in MUTUAL_LIABILITY_PATTERNS:
+        if re.search(pattern, text_lower):
+            return True
+    return False
 
 from .rules import (
     RiskSeverity,
@@ -113,11 +137,25 @@ class RiskAssessor:
             if not rule:
                 continue
 
+            # Check for mutual language in liability-related clauses
+            severity = rule.severity
+            reason = rule.reason
+            liability_labels = {"Uncapped Liability", "Cap On Liability", "Liquidated Damages"}
+
+            if label in liability_labels and _has_mutual_language(clause.text):
+                # Mutual exclusion of damages is standard - downgrade severity
+                if label == "Uncapped Liability":
+                    severity = RiskSeverity.INFO
+                    reason = "Mutual exclusion of consequential damages (standard provision)"
+                elif label == "Liquidated Damages":
+                    severity = RiskSeverity.MEDIUM
+                    reason = "Mutual liquidated damages provision"
+
             # Add finding based on rule
             finding = RiskFinding(
                 label=label,
-                severity=rule.severity,
-                reason=rule.reason,
+                severity=severity,
+                reason=reason,
                 recommendation=rule.recommendation,
                 clause_text=clause.text,
                 confidence=clause.label_confidence,
@@ -169,14 +207,22 @@ KNOWN RISK CONTEXT:
 - Default severity: {rule.severity.value}
 - Typical concern: {rule.reason}
 
+IMPORTANT CONSIDERATIONS:
+- Check if language is MUTUAL (applies to both parties equally) vs ONE-SIDED
+- Mutual exclusion of consequential damages is standard practice (lower risk)
+- One-sided liability limitations or uncapped indemnification are high risk
+- Look for phrases like "either party", "neither party", "each party" indicating mutuality
+
 Provide a risk assessment:
-1. Actual severity for THIS specific clause (CRITICAL/HIGH/MEDIUM/LOW)
-2. Specific risks identified in this language
-3. Recommended negotiation points
+1. Is this mutual or one-sided? (affects severity)
+2. Actual severity for THIS specific clause (CRITICAL/HIGH/MEDIUM/LOW/INFO)
+3. Specific risks identified in this language
+4. Recommended negotiation points
 
 Return JSON:
 {{
     "severity": "HIGH",
+    "is_mutual": true,
     "specific_reason": "why this particular clause is risky",
     "recommendation": "specific negotiation advice",
     "confidence": 0.85

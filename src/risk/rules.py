@@ -152,6 +152,7 @@ RISK_RULES = {
         severity=RiskSeverity.CRITICAL,
         reason="Unlimited financial exposure",
         recommendation="Never accept uncapped liability - negotiate a reasonable cap",
+        requires_llm=True,  # LLM checks if mutual exclusion vs one-sided liability
     ),
     "Liquidated Damages": RiskRule(
         severity=RiskSeverity.HIGH,
