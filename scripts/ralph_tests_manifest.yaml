@@ -1,0 +1,128 @@
+tasks:
+  # Layer 0: Shared fixtures (all other tests depend on this)
+  T0_conftest:
+    layer: 0
+    description: "Shared pytest fixtures, mock factories, and singleton cache clearing"
+    file: "tests/conftest.py"
+    action: "create"
+
+  # Layer 1: Unit tests (parallel, no interdependencies)
+  T1_test_config:
+    layer: 1
+    description: "Settings defaults, aggregation thresholds, get_settings()"
+    file: "tests/unit/test_config.py"
+    action: "create"
+    depends_on: [T0_conftest]
+
+  T1_test_models:
+    layer: 1
+    description: "Pydantic schema validation: KGNode, Triple, NodeType, specialized nodes"
+    file: "tests/unit/test_models.py"
+    action: "create"
+    depends_on: [T0_conftest]
+
+  T1_test_extraction_helpers:
+    layer: 1
+    description: "_normalize_name, _map_confidence, _chunk_text pure functions"
+    file: "tests/unit/test_extraction_helpers.py"
+    action: "create"
+    depends_on: [T0_conftest]
+
+  T1_test_risk_rules:
+    layer: 1
+    description: "RISK_RULES, MISSING_CLAUSE_RISKS, scoring, _score_to_level"
+    file: "tests/unit/test_risk_rules.py"
+    action: "create"
+    depends_on: [T0_conftest]
+
+  T1_test_interdependency:
+    layer: 1
+    description: "Types, matrix (73 rules), graph algorithms (cycles, impact, centrality)"
+    file: "tests/unit/test_interdependency.py"
+    action: "create"
+    depends_on: [T0_conftest]
+
+  T1_test_embedding_utils:
+    layer: 1
+    description: "Cache backends, compute_similarity, find_similar, cluster_embeddings"
+    file: "tests/unit/test_embedding_utils.py"
+    action: "create"
+    depends_on: [T0_conftest]
+
+  T1_test_search_backends:
+    layer: 1
+    description: "InMemoryVectorBackend: index, search, delete, size guards"
+    file: "tests/unit/test_search_backends.py"
+    action: "create"
+    depends_on: [T0_conftest]
+
+  T1_test_search_service:
+    layer: 1
+    description: "RRF fusion, BM25 search, hybrid search, indexing"
+    file: "tests/unit/test_search_service.py"
+    action: "create"
+    depends_on: [T0_conftest]
+
+  T1_test_resolution:
+    layer: 1
+    description: "Pairwise clustering, adaptive k-means, canonical selection, dedup"
+    file: "tests/unit/test_resolution.py"
+    action: "create"
+    depends_on: [T0_conftest]
+
+  T1_test_aggregation:
+    layer: 1
+    description: "Per-entity-type thresholds, normalization, cross-contract aggregation"
+    file: "tests/unit/test_aggregation.py"
+    action: "create"
+    depends_on: [T0_conftest]
+
+  T1_test_pipeline_helpers:
+    layer: 1
+    description: "_build_summary, dataclasses, extraction prompts, bridge function"
+    file: "tests/unit/test_pipeline_helpers.py"
+    action: "create"
+    depends_on: [T0_conftest]
+
+  T1_test_llm_service:
+    layer: 1
+    description: "LLM generate, retry, fallback, JSON parsing with mocked clients"
+    file: "tests/unit/test_llm_service.py"
+    action: "create"
+    depends_on: [T0_conftest]
+
+  T1_test_query_service:
+    layer: 1
+    description: "RAG pipeline, specialized queries, compare, suggest_queries"
+    file: "tests/unit/test_query_service.py"
+    action: "create"
+    depends_on: [T0_conftest]
+
+  T1_test_portfolio_analyzer:
+    layer: 1
+    description: "Portfolio risk summary, gap analysis, contract comparison"
+    file: "tests/unit/test_portfolio_analyzer.py"
+    action: "create"
+    depends_on: [T0_conftest]
+
+  # Layer 2: Integration tests (depends on all unit tests)
+  T2_test_api:
+    layer: 2
+    description: "FastAPI TestClient: health, upload, search, query endpoints"
+    file: "tests/integration/test_api.py"
+    action: "create"
+    depends_on:
+      - T1_test_config
+      - T1_test_models
+      - T1_test_extraction_helpers
+      - T1_test_risk_rules
+      - T1_test_interdependency
+      - T1_test_embedding_utils
+      - T1_test_search_backends
+      - T1_test_search_service
+      - T1_test_resolution
+      - T1_test_aggregation
+      - T1_test_pipeline_helpers
+      - T1_test_llm_service
+      - T1_test_query_service
+      - T1_test_portfolio_analyzer

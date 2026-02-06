@@ -14,11 +14,12 @@ import yaml
 
 
 STATE_FILE = Path(__file__).parent.parent / ".ralph_state.json"
-MANIFEST_FILE = Path(__file__).parent / "ralph_manifest.yaml"
+DEFAULT_MANIFEST = Path(__file__).parent / "ralph_manifest.yaml"
 
 
-def load_manifest() -> dict:
-    with open(MANIFEST_FILE) as f:
+def load_manifest(manifest_path: Path | None = None) -> dict:
+    path = manifest_path or DEFAULT_MANIFEST
+    with open(path) as f:
         return yaml.safe_load(f)["tasks"]
 
 
@@ -104,7 +105,16 @@ def run_task(manifest: dict, state: dict, task_id: str):
 
 
 def main():
-    manifest = load_manifest()
+    # Parse --manifest flag
+    manifest_path = None
+    if "--manifest" in sys.argv:
+        idx = sys.argv.index("--manifest")
+        if idx + 1 < len(sys.argv):
+            manifest_path = Path(sys.argv[idx + 1])
+            if not manifest_path.is_absolute():
+                manifest_path = Path.cwd() / manifest_path
+
+    manifest = load_manifest(manifest_path)
     state = load_state()
 
     if "--report" in sys.argv:
