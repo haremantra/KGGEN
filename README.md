@@ -2,13 +2,19 @@
 
 A knowledge graph-powered contract analysis system that combines clause classification, entity extraction, and risk assessment for legal contracts. Built on the CUAD (Contract Understanding Atticus Dataset) methodology with 41 legal clause categories.
 
+> **[Why I Built This](WHY_I_BUILT_THIS.md)** - Read about the motivation behind this project
+
 ## Features
 
-- **Clause Classification**: Automatically identify 41 CUAD legal clause types using semantic similarity
+- **Clause Classification**: Fine-tuned sentence-transformer achieving 61% accuracy on CUAD labels (up from 29% baseline) with calibrated confidence scores
 - **Risk Assessment**: Hybrid rule-based + LLM analysis for comprehensive risk scoring
+- **Clause Interdependency**: 73 dependency rules detecting contradictions, missing requirements, and cascading impacts
+- **Entity Resolution**: Semantic clustering with adaptive k-means to unify entities across contracts
+- **Hybrid Search**: BM25 + semantic vector search with reciprocal rank fusion
+- **RAG Query**: Natural language Q&A over your contract portfolio
 - **Portfolio Analysis**: Cross-contract comparison, gap analysis, and aggregate risk metrics
 - **REST API**: FastAPI backend with full contract lifecycle management
-- **Web Dashboard**: Interactive Streamlit UI for visual analysis
+- **Web Dashboard**: Interactive 7-page Streamlit UI for visual analysis
 - **CLI Tools**: Command-line interface for batch processing and automation
 
 ## Quick Start
@@ -66,25 +72,49 @@ streamlit run streamlit_app.py
 KGGEN/
 ├── src/
 │   ├── api/                    # FastAPI REST API
-│   │   ├── app.py              # Application factory
-│   │   └── routes.py           # API endpoints
+│   │   ├── app.py              # Application factory with CORS
+│   │   └── routes.py           # Contract, portfolio, search & query endpoints
 │   ├── classification/         # CUAD clause classification
-│   │   ├── classifier.py       # Semantic similarity classifier
+│   │   ├── classifier.py       # Fine-tuned classifier with Platt scaling
 │   │   └── cuad_labels.py      # 41 CUAD label definitions
 │   ├── extraction/             # Entity/relationship extraction
-│   │   └── extractor.py        # LLM-based extraction
+│   │   └── extractor.py        # LLM-based KG extraction
 │   ├── risk/                   # Risk assessment engine
 │   │   ├── rules.py            # Risk rules for CUAD categories
-│   │   └── assessor.py         # Hybrid risk scoring
+│   │   └── assessor.py         # Hybrid rule + LLM risk scoring
+│   ├── interdependency/        # Clause interdependency analysis
+│   │   ├── types.py            # DependencyType, ClauseNode, DependencyEdge
+│   │   ├── matrix.py           # 73 static dependency rules
+│   │   ├── detector.py         # Rule matching + LLM validation
+│   │   ├── graph.py            # NetworkX graph builder + algorithms
+│   │   └── analyzer.py         # Orchestrator producing InterdependencyReport
+│   ├── resolution/             # Entity resolution
+│   │   └── resolver.py         # Adaptive k-means + LLM canonical selection
+│   ├── aggregation/            # Cross-contract aggregation
+│   │   └── aggregator.py       # Per-entity-type dedup thresholds
+│   ├── search/                 # Hybrid search
+│   │   ├── service.py          # BM25 + semantic with RRF fusion
+│   │   └── backends.py         # InMemory + Qdrant backends
+│   ├── query/                  # RAG query service
+│   │   └── service.py          # Context retrieval → LLM answer
 │   ├── portfolio/              # Portfolio-level analysis
-│   │   └── analyzer.py         # Cross-contract analysis
+│   │   └── analyzer.py         # Cross-contract comparison & gaps
 │   ├── utils/                  # Utilities
 │   │   ├── pdf_reader.py       # PDF text extraction
-│   │   └── neo4j_store.py      # Graph database storage
-│   ├── config.py               # Configuration management
+│   │   ├── neo4j_store.py      # Graph database storage
+│   │   ├── embedding.py        # S-BERT embedding service
+│   │   └── llm.py              # LLM service with retry + fallback
+│   ├── config.py               # Pydantic settings from .env
 │   ├── pipeline.py             # Integrated analysis pipeline
 │   └── main.py                 # CLI entry point
-├── streamlit_app.py            # Web dashboard
+├── scripts/
+│   ├── ralph.py                # RALPH task orchestrator
+│   ├── finetune_classifier.py  # Fine-tune on CUAD dataset
+│   ├── calibrate_classifier.py # Platt scaling calibration
+│   └── benchmark_classifier.py # Accuracy benchmarking
+├── models/                     # Fine-tuned models (git-ignored)
+│   └── cuad-MiniLM-L6-v2-finetuned/
+├── streamlit_app.py            # Web dashboard (7 pages)
 ├── docker-compose.yml          # Full stack deployment
 ├── Dockerfile                  # Container image
 └── pyproject.toml              # Dependencies
@@ -131,6 +161,28 @@ The system uses a hybrid approach combining deterministic rules with LLM analysi
 - No termination for convenience
 - No governing law specified
 
+## Clause Interdependency Analysis
+
+Contracts are interconnected systems where modifying one clause can cascade through the document. The interdependency module maps these relationships:
+
+### Dependency Types
+
+| Type | Description | Example |
+|------|-------------|---------|
+| REQUIRES | Clause A needs clause B to be enforceable | Indemnification requires Insurance |
+| MODIFIES | Clause A changes the effect of clause B | Cap on Liability modifies Indemnification |
+| CONFLICTS | Clauses may contradict each other | Exclusivity vs. Non-Exclusive License |
+| SUPERSEDES | Clause A overrides clause B | Specific provision supersedes general |
+| TRIGGERS | Clause A activates clause B | Termination triggers Post-Termination Services |
+| REFERENCES | Clause A mentions clause B | License Grant references IP Ownership |
+
+### Analysis Outputs
+
+- **Contradiction Detection**: Finds clauses with conflicting terms
+- **Missing Requirements**: Identifies required companion clauses that are absent
+- **Impact Analysis**: Maps which clauses are affected when one is modified
+- **Risk Adjustment**: Adds up to +40 points to risk score based on structural issues
+
 ## API Reference
 
 ### Contract Endpoints
@@ -141,7 +193,12 @@ The system uses a hybrid approach combining deterministic rules with LLM analysi
 | GET | `/api/contracts` | List all contracts |
 | GET | `/api/contracts/{id}` | Get contract analysis |
 | GET | `/api/contracts/{id}/risks` | Get risk assessment |
+| GET | `/api/contracts/{id}/dependencies` | Get clause dependency graph |
+| GET | `/api/contracts/{id}/contradictions` | Get detected contradictions |
+| GET | `/api/contracts/{id}/completeness` | Get missing requirements |
+| GET | `/api/contracts/{id}/impact/{label}` | Impact analysis for a clause |
 | DELETE | `/api/contracts/{id}` | Delete a contract |
+| POST | `/api/contracts/bulk-delete` | Delete multiple or all contracts |
 
 ### Portfolio Endpoints
 
@@ -152,6 +209,16 @@ The system uses a hybrid approach combining deterministic rules with LLM analysi
 | GET | `/api/portfolio/gaps` | Missing clause analysis |
 | POST | `/api/portfolio/compare` | Compare two contracts |
 | GET | `/api/portfolio/clause/{label}` | Clause coverage analysis |
+
+### Search & Query Endpoints
+
+| Method | Endpoint | Description |
+|--------|----------|-------------|
+| POST | `/api/search/entities` | Search entities in knowledge graph |
+| POST | `/api/search/triples` | Search relationships/triples |
+| POST | `/api/query` | RAG-based natural language Q&A |
+| GET | `/api/contracts/{id}/qa?q=...` | Q&A for specific contract |
+| POST | `/api/query/compare` | Compare contracts on specific aspect |
 
 ### Example API Usage
 
@@ -201,13 +268,15 @@ python -m src.main serve [--host 0.0.0.0] [--port 8000] [--reload]
 
 ## Web Dashboard
 
-The Streamlit dashboard provides visual analysis across 5 pages:
+The Streamlit dashboard provides visual analysis across 7 pages:
 
-1. **Upload**: Drag-and-drop contract upload with batch processing
+1. **Upload**: Drag-and-drop contract upload with batch processing and contract management (delete individual or all)
 2. **Portfolio**: Risk distribution charts, heatmaps, highest-risk contracts
 3. **Analysis**: Individual contract deep-dive with clause-by-clause findings
 4. **Compare**: Side-by-side contract comparison
 5. **Gaps**: Missing protection checker with recommendations
+6. **Dependencies**: Clause interdependency graph visualization
+7. **Search**: Natural language search and Q&A across portfolio
 
 Access at: http://localhost:8501
 
@@ -297,13 +366,25 @@ DEFAULT_LLM_MODEL=claude-sonnet-4-20250514
 
 ## Performance
 
-| Metric | Target | Description |
-|--------|--------|-------------|
-| Classification Accuracy | 85%+ | CUAD label identification |
-| Risk Score Correlation | 90%+ | Agreement with legal expert review |
+### Classifier Metrics (Fine-tuned Model)
+
+| Metric | Baseline | Fine-tuned | Improvement |
+|--------|----------|------------|-------------|
+| Accuracy | 29.4% | 61.0% | +31.6 pp |
+| Macro F1 | - | 53.2% | - |
+| Weighted F1 | - | 62.2% | - |
+| ECE (calibrated) | 4.5% | 4.4% | Excellent calibration |
+
+*Trained on 8,257 CUAD clause pairs using MultipleNegativesRankingLoss*
+
+### System Performance
+
+| Metric | Value | Description |
+|--------|-------|-------------|
 | Extraction Throughput | 1-2 contracts/min | Full pipeline processing |
 | API Latency (P95) | <500ms | Non-analysis endpoints |
 | Analysis Time | 30-120s | Per contract (depends on size) |
+| Test Coverage | 52% | 251 tests across unit and integration |
 
 ## Development
 
@@ -311,8 +392,18 @@ DEFAULT_LLM_MODEL=claude-sonnet-4-20250514
 # Install dev dependencies
 pip install -e ".[dev]"
 
-# Run tests
-pytest tests/
+# Run tests (251 tests, 52% coverage)
+pytest tests/ -v
+pytest tests/ --cov=src --cov-report=term-missing
+
+# Run RALPH task orchestrator
+python scripts/ralph.py --manifest scripts/ralph_tests_manifest.yaml --report
+
+# Fine-tune classifier on CUAD dataset
+python scripts/prepare_cuad_dataset.py
+python scripts/finetune_classifier.py
+python scripts/calibrate_classifier.py finetuned
+python scripts/benchmark_classifier.py finetuned
 
 # Format code
 black src/ tests/
