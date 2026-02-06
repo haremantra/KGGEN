@@ -1,6 +1,12 @@
-"""Contract Clause Classifier using CUAD labels with semantic similarity."""
+"""Contract Clause Classifier using CUAD labels with semantic similarity.
 
+Uses a fine-tuned sentence-transformer model with Platt scaling for calibrated
+confidence scores.
+"""
+
+import json
 import re
+from pathlib import Path
 import numpy as np
 from dataclasses import dataclass
 from sentence_transformers import SentenceTransformer
@@ -9,6 +15,12 @@ from qdrant_client.models import Distance, VectorParams, PointStruct
 
 from .cuad_labels import CUAD_LABELS, get_all_labels
 from ..config import settings
+
+# Platt scaling parameters for calibrated confidence (fine-tuned model)
+# Fitted on CUAD validation set: A=-6.0540, B=2.2416
+# Calibrated probability: P = 1 / (1 + exp(A * sim + B))
+PLATT_A = -6.0540
+PLATT_B = 2.2416
 
 
 @dataclass
@@ -28,27 +40,67 @@ class ClassifiedClause:
     labels: list[ClauseLabel]
 
 
+def _load_platt_params() -> tuple[float, float]:
+    """Load Platt scaling parameters from calibration file if available."""
+    calibration_file = Path("data/cuad/calibration/finetuned_platt_params.json")
+    if calibration_file.exists():
+        with open(calibration_file) as f:
+            params = json.load(f)
+            return params.get("A", PLATT_A), params.get("B", PLATT_B)
+    return PLATT_A, PLATT_B
+
+
+def _apply_platt_scaling(similarity: float, A: float, B: float) -> float:
+    """Apply Platt scaling to convert raw similarity to calibrated probability."""
+    return 1.0 / (1.0 + np.exp(A * similarity + B))
+
+
 class ClauseClassifier:
-    """Classifies contract clauses using CUAD label categories with semantic similarity."""
+    """Classifies contract clauses using CUAD label categories with semantic similarity.
+
+    Uses a fine-tuned sentence-transformer model with Platt scaling for calibrated
+    confidence scores. The fine-tuned model achieves ~61% accuracy on CUAD test set.
+    """
 
     COLLECTION_NAME = "cuad_labels"
 
+    # Default to fine-tuned model if available, else fall back to base model
+    DEFAULT_MODEL = "models/cuad-MiniLM-L6-v2-finetuned"
+    FALLBACK_MODEL = "all-MiniLM-L6-v2"
+
     def __init__(
         self,
-        model_name: str = "all-MiniLM-L6-v2",
+        model_name: str | None = None,
         use_qdrant: bool = True,
+        use_calibration: bool = True,
     ):
         """Initialize the classifier.
 
         Args:
-            model_name: Sentence transformer model for embeddings.
+            model_name: Sentence transformer model for embeddings. Defaults to
+                fine-tuned CUAD model if available.
             use_qdrant: Whether to use Qdrant for vector storage (vs in-memory).
+            use_calibration: Whether to apply Platt scaling for calibrated confidence.
         """
+        # Try fine-tuned model first, fall back to base model
+        if model_name is None:
+            if Path(self.DEFAULT_MODEL).exists():
+                model_name = self.DEFAULT_MODEL
+            else:
+                model_name = self.FALLBACK_MODEL
+
         self.model_name = model_name
         self.model = SentenceTransformer(model_name)
         self.use_qdrant = use_qdrant
+        self.use_calibration = use_calibration
         self._label_embeddings = None
         self._labels = None
+
+        # Load Platt scaling parameters
+        if use_calibration:
+            self._platt_A, self._platt_B = _load_platt_params()
+        else:
+            self._platt_A, self._platt_B = None, None
 
         if use_qdrant:
             self.qdrant = QdrantClient(
@@ -161,8 +213,13 @@ class ClauseClassifier:
 
             labels = []
             for result in results:
-                score = getattr(result, 'score', 0.0)
-                if score >= threshold:
+                raw_score = getattr(result, 'score', 0.0)
+                # Apply Platt scaling for calibrated confidence
+                if self.use_calibration and self._platt_A is not None:
+                    score = _apply_platt_scaling(raw_score, self._platt_A, self._platt_B)
+                else:
+                    score = raw_score
+                if raw_score >= threshold:  # Threshold on raw similarity
                     payload = result.payload
                     labels.append(ClauseLabel(
                         label=payload["label"],
@@ -182,11 +239,17 @@ class ClauseClassifier:
 
             labels = []
             for idx in top_indices:
-                if similarities[idx] >= threshold:
+                raw_score = similarities[idx]
+                if raw_score >= threshold:  # Threshold on raw similarity
+                    # Apply Platt scaling for calibrated confidence
+                    if self.use_calibration and self._platt_A is not None:
+                        score = _apply_platt_scaling(raw_score, self._platt_A, self._platt_B)
+                    else:
+                        score = raw_score
                     label_name = self._labels[idx]
                     labels.append(ClauseLabel(
                         label=label_name,
-                        confidence=float(similarities[idx]),
+                        confidence=float(score),
                         category=CUAD_LABELS[label_name]["category"],
                         description=CUAD_LABELS[label_name]["description"],
                     ))

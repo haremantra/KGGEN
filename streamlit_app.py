@@ -137,6 +137,64 @@ if page == "Upload":
         else:
             st.info("No contracts uploaded yet")
 
+    # Contract Management Section
+    st.markdown("---")
+    st.markdown("### Manage Contracts")
+
+    if contracts and len(contracts) > 0:
+        # Build options for selection
+        contract_options = {
+            f"{c['filename']} ({c['contract_id']})": c['contract_id']
+            for c in contracts
+        }
+
+        # Selection mode
+        if len(contracts) >= 2:
+            delete_mode = st.radio(
+                "Delete mode",
+                ["Select individual contracts", "Delete all contracts"],
+                horizontal=True,
+                key="delete_mode"
+            )
+        else:
+            delete_mode = "Select individual contracts"
+
+        if delete_mode == "Select individual contracts":
+            selected_to_delete = st.multiselect(
+                "Select contracts to delete",
+                options=list(contract_options.keys()),
+                key="contracts_to_delete"
+            )
+
+            if selected_to_delete:
+                st.warning(f"You are about to delete {len(selected_to_delete)} contract(s).")
+
+                if st.button("Delete Selected", type="secondary", key="delete_selected_btn"):
+                    ids_to_delete = [contract_options[name] for name in selected_to_delete]
+                    result = api_request("POST", "/contracts/bulk-delete", json={"contract_ids": ids_to_delete})
+                    if result:
+                        st.success(f"Deleted {result.get('count', 0)} contract(s).")
+                        st.rerun()
+                    else:
+                        st.error("Failed to delete contracts.")
+
+        else:  # Delete all
+            st.warning(f"You are about to delete ALL {len(contracts)} contracts. This cannot be undone.")
+
+            # Require confirmation
+            confirm = st.checkbox("I confirm I want to delete all contracts", key="confirm_delete_all")
+
+            if confirm:
+                if st.button("Delete All Contracts", type="secondary", key="delete_all_btn"):
+                    result = api_request("POST", "/contracts/bulk-delete", json={"delete_all": True})
+                    if result:
+                        st.success(f"Deleted {result.get('count', 0)} contract(s).")
+                        st.rerun()
+                    else:
+                        st.error("Failed to delete contracts.")
+    else:
+        st.info("No contracts to manage. Upload contracts above.")
+
 
 # === Page: Portfolio ===
 elif page == "Portfolio":

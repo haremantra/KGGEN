@@ -293,6 +293,40 @@ async def get_contract_risks(contract_id: str):
     )
 
 
+class BulkDeleteRequest(BaseModel):
+    """Request to delete multiple contracts."""
+    contract_ids: list[str] | None = Field(None, description="Specific IDs to delete, or null for all")
+    delete_all: bool = Field(False, description="Set true to delete all contracts")
+
+
+@router.post("/contracts/bulk-delete")
+async def bulk_delete_contracts(request: BulkDeleteRequest):
+    """Delete multiple contracts or all contracts."""
+    if request.delete_all:
+        count = len(_contract_store)
+        if count == 0:
+            raise HTTPException(400, "No contracts to delete")
+        _contract_store.clear()
+        _analysis_store.clear()
+        _risk_store.clear()
+        _interdependency_store.clear()
+        return {"status": "deleted", "count": count, "message": f"Deleted {count} contract(s)"}
+
+    if not request.contract_ids:
+        raise HTTPException(400, "Provide contract_ids or set delete_all=true")
+
+    deleted = 0
+    for cid in request.contract_ids:
+        if cid in _contract_store:
+            del _contract_store[cid]
+            _analysis_store.pop(cid, None)
+            _risk_store.pop(cid, None)
+            _interdependency_store.pop(cid, None)
+            deleted += 1
+
+    return {"status": "deleted", "count": deleted, "message": f"Deleted {deleted} contract(s)"}
+
+
 @router.delete("/contracts/{contract_id}")
 async def delete_contract(contract_id: str):
     """Delete a contract and its analysis."""

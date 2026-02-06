@@ -1,0 +1,233 @@
+# RALPH Manifest: CUAD Classifier Fine-Tuning Pipeline
+#
+# Goal: Fine-tune sentence-transformer on CUAD contract clauses for improved
+#       clause classification accuracy with calibrated confidence scores.
+#
+# Layers:
+#   L0: Dataset preparation (HALT for download approval)
+#   L1: Baseline benchmark (depends on L0)
+#   L2: Baseline confidence calibration (depends on L1)
+#   L3: Fine-tuning (HALT for compute approval, depends on L0)
+#   L4: Recalibration + Integration (depends on L3; recalibrate before integrate)
+#   L5: Final benchmark (depends on L4)
+
+tasks:
+  # ============================================================================
+  # L0: CUAD Dataset Preparation
+  # ============================================================================
+  L0_dataset_download:
+    description: "Download CUAD dataset from HuggingFace or local cache"
+    layer: 0
+    status: HALT
+    halt_reason: "Requires user confirmation: CUAD dataset is ~500MB. Confirm download or provide local path."
+    outputs:
+      - data/cuad/raw/CUADv1.json
+    acceptance:
+      - "CUAD JSON file exists with 510 contracts"
+      - "All 41 clause categories present"
+
+  L0_dataset_split:
+    description: "Create train/val/test split (70/15/15) stratified by clause type"
+    layer: 0
+    depends_on: [L0_dataset_download]
+    outputs:
+      - data/cuad/splits/train.jsonl
+      - data/cuad/splits/val.jsonl
+      - data/cuad/splits/test.jsonl
+      - data/cuad/splits/split_stats.json
+    acceptance:
+      - "Train set: ~357 contracts"
+      - "Val set: ~76 contracts"
+      - "Test set: ~77 contracts"
+      - "Each split has all 41 categories represented"
+      - "No contract appears in multiple splits"
+
+  L0_training_pairs:
+    description: "Generate sentence-pair training data (clause, label) with hard negatives"
+    layer: 0
+    depends_on: [L0_dataset_split]
+    outputs:
+      - data/cuad/pairs/train_pairs.jsonl
+      - data/cuad/pairs/val_pairs.jsonl
+      - data/cuad/pairs/pair_stats.json
+    acceptance:
+      - "Each positive pair has 3-5 hard negatives (similar but different category)"
+      - "Pairs formatted for sentence-transformers InputExample"
+      - "Minimum 10k training pairs"
+
+  # ============================================================================
+  # L1: Baseline Benchmark
+  # ============================================================================
+  L1_baseline_benchmark:
+    description: "Benchmark current all-MiniLM-L6-v2 classifier on test set"
+    layer: 1
+    depends_on: [L0_dataset_split]
+    outputs:
+      - data/cuad/benchmarks/baseline_results.json
+      - data/cuad/benchmarks/baseline_confusion.png
+      - data/cuad/benchmarks/baseline_per_category.csv
+    metrics:
+      - accuracy
+      - macro_f1
+      - weighted_f1
+      - per_category_precision
+      - per_category_recall
+      - confidence_calibration_error
+    acceptance:
+      - "All 41 categories evaluated"
+      - "Confusion matrix generated"
+      - "Per-category metrics saved"
+      - "Baseline accuracy recorded (expected ~65-75%)"
+
+  # ============================================================================
+  # L2: Confidence Calibration (Platt Scaling)
+  # ============================================================================
+  L2_calibration_analysis:
+    description: "Analyze confidence distribution on validation set"
+    layer: 2
+    depends_on: [L1_baseline_benchmark]
+    outputs:
+      - data/cuad/calibration/confidence_histogram.png
+      - data/cuad/calibration/reliability_diagram.png
+      - data/cuad/calibration/raw_calibration_stats.json
+    acceptance:
+      - "Confidence histogram shows distribution"
+      - "Reliability diagram shows calibration curve vs perfect calibration"
+      - "Expected Calibration Error (ECE) computed"
+
+  L2_platt_scaling:
+    description: "Fit Platt scaling (logistic regression) on validation set confidences"
+    layer: 2
+    depends_on: [L2_calibration_analysis]
+    outputs:
+      - data/cuad/calibration/platt_params.json
+      - data/cuad/calibration/calibrated_reliability_diagram.png
+    acceptance:
+      - "Platt parameters (A, B) saved for sigmoid: P = 1/(1 + exp(A*score + B))"
+      - "Calibrated ECE < raw ECE"
+      - "Per-category threshold recommendations generated"
+
+  # ============================================================================
+  # L3: Fine-Tuning
+  # ============================================================================
+  L3_training_config:
+    description: "Configure fine-tuning hyperparameters and training script"
+    layer: 3
+    depends_on: [L0_training_pairs]
+    status: HALT
+    halt_reason: "Requires compute decision: Fine-tuning takes ~2-4 hours on GPU, ~12-24 hours on CPU. Confirm compute resources."
+    outputs:
+      - scripts/finetune_classifier.py
+      - configs/finetune_config.yaml
+    config:
+      base_model: "sentence-transformers/all-MiniLM-L6-v2"
+      output_model: "models/cuad-MiniLM-L6-v2-finetuned"
+      epochs: 3
+      batch_size: 32
+      learning_rate: 2e-5
+      warmup_ratio: 0.1
+      loss: "MultipleNegativesRankingLoss"
+      evaluation_steps: 500
+
+  L3_finetune:
+    description: "Fine-tune sentence-transformer on CUAD training pairs"
+    layer: 3
+    depends_on: [L3_training_config]
+    outputs:
+      - models/cuad-MiniLM-L6-v2-finetuned/
+      - data/cuad/training/training_log.json
+      - data/cuad/training/loss_curve.png
+    acceptance:
+      - "Model checkpoint saved"
+      - "Training loss decreasing"
+      - "Validation loss not diverging (no overfitting)"
+
+  # ============================================================================
+  # L4: Recalibration & Integration
+  # Note: L4_recalibrate fits NEW Platt params to fine-tuned model outputs,
+  # ensuring calibration is tuned to the fine-tuned embedding space.
+  # ============================================================================
+  L4_recalibrate:
+    description: "Fit Platt scaling to fine-tuned model outputs on validation set"
+    layer: 4
+    depends_on: [L3_finetune]
+    outputs:
+      - data/cuad/calibration/finetuned_confidence_histogram.png
+      - data/cuad/calibration/finetuned_reliability_diagram.png
+      - data/cuad/calibration/platt_params_finetuned.json
+      - data/cuad/calibration/calibration_comparison.png
+    acceptance:
+      - "Fine-tuned model run on validation set"
+      - "New Platt parameters (A, B) fitted to fine-tuned outputs"
+      - "Calibration comparison chart: baseline raw vs baseline+Platt vs finetuned raw vs finetuned+Platt"
+      - "Expect: finetuned raw ECE < baseline raw ECE (contrastive learning improves calibration)"
+      - "Expect: finetuned+Platt ECE < all others"
+
+  L4_classifier_integration:
+    description: "Integrate fine-tuned model into classifier.py with calibrated thresholds"
+    layer: 4
+    depends_on: [L4_recalibrate]
+    outputs:
+      - src/classification/classifier.py (modified)
+      - src/classification/calibration.py (new)
+      - configs/classifier_thresholds.yaml
+    changes:
+      - "Add model selection: base vs fine-tuned"
+      - "Add Platt scaling calibration layer using platt_params_finetuned.json"
+      - "Add per-category confidence thresholds"
+      - "Backward compatible: default to base model + baseline Platt params if fine-tuned not available"
+    acceptance:
+      - "classifier.py loads fine-tuned model when available"
+      - "Confidence scores pass through Platt scaling (finetuned params)"
+      - "Per-category thresholds configurable"
+      - "Existing tests still pass"
+
+  L4_add_tests:
+    description: "Add unit tests for calibration and model selection"
+    layer: 4
+    depends_on: [L4_classifier_integration]
+    outputs:
+      - tests/unit/test_calibration.py (new)
+      - tests/unit/test_classifier.py (modified or new)
+    acceptance:
+      - "Test Platt scaling transformation"
+      - "Test model selection logic"
+      - "Test threshold application"
+      - "All existing tests still pass"
+
+  # ============================================================================
+  # L5: Final Benchmark
+  # ============================================================================
+  L5_finetuned_benchmark:
+    description: "Benchmark fine-tuned + calibrated classifier on test set"
+    layer: 5
+    depends_on: [L4_classifier_integration]
+    outputs:
+      - data/cuad/benchmarks/finetuned_results.json
+      - data/cuad/benchmarks/finetuned_confusion.png
+      - data/cuad/benchmarks/finetuned_per_category.csv
+      - data/cuad/benchmarks/comparison_report.md
+    acceptance:
+      - "Accuracy improved over baseline"
+      - "Calibration error reduced"
+      - "Comparison report shows delta per metric"
+
+  L5_final_report:
+    description: "Generate final report with recommendations"
+    layer: 5
+    depends_on: [L5_finetuned_benchmark]
+    outputs:
+      - docs/classifier_finetuning_report.md
+    content:
+      - "Executive summary"
+      - "Baseline vs fine-tuned metrics comparison"
+      - "Per-category performance analysis"
+      - "Confidence calibration improvement"
+      - "Recommendations for production deployment"
+      - "Known limitations and future work"
+
+# Summary:
+# - 13 tasks across 6 layers (L0-L5)
+# - 2 HALT points: dataset download, compute decision
+# - Outputs: fine-tuned model, calibration params (baseline + finetuned), updated classifier, benchmark reports
+# - L4_recalibrate ensures fine-tuned model gets its own Platt scaling (not reusing baseline params)
