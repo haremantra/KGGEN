@@ -2,6 +2,27 @@
 
 This file provides guidance to Claude Code (claude.ai/code) when working with code in this repository.
 
+## Problem Solving
+
+**Three-Phase Debugging Rule**: When a fix attempt fails twice with the same approach, STOP and propose 3 fundamentally different solution strategies before proceeding. For each alternative:
+1. Describe the approach
+2. List pros and cons
+3. Explain why it might succeed where the previous attempt failed
+
+**Do not repeat failing approaches**. If the same error occurs twice, step back and try a different architecture, not a variation of the same fix.
+
+## Python / FastAPI
+
+- **Route ordering matters**: More specific routes must be defined BEFORE parameterized routes (e.g., `/contracts/bulk-delete` before `/contracts/{id}`)
+- When DELETE or other methods conflict, consider using POST with a different path instead of fighting route matching
+- Test endpoints with `curl` after changes to verify they work before committing
+
+## Testing
+
+- **Always run tests before committing bug fixes**: `pytest tests/ -v`
+- After fixing a bug, verify the fix works with a manual test (curl, browser, etc.)
+- If tests fail after a fix, the fix is not complete - iterate until green
+
 ## Project Overview
 
 KGGEN-CUAD is a Knowledge Graph Generator and Contract Analysis system that applies the KGGen methodology to the CUAD (Contract Understanding Atticus Dataset) for legal contract analysis. The system extracts structured knowledge graphs from legal contracts, performs risk assessment, and enables portfolio-level analysis for technology agreements within common law jurisdictions.
