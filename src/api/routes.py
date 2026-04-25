@@ -265,6 +265,7 @@ async def get_contract(contract_id: str):
                     for v in c.extracted_values
                 ],
                 "entities": c.entities,
+                "modality_findings": [f.to_dict() for f in c.modality_findings],
             }
             for c in analysis.analyzed_clauses
         ],

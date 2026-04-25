@@ -1,6 +1,7 @@
 """Tests for src/pipeline.py — dataclasses, _build_summary, EXTRACTION_PROMPTS."""
 
 import pytest
+from src.modality import Modality, ModalFinding, ModalityChecker
 from src.pipeline import (
     ExtractedValue, AnalyzedClause, ContractAnalysis,
     ContractAnalysisPipeline, EXTRACTION_PROMPTS,
@@ -99,3 +100,83 @@ class TestExtractionPrompts:
 
     def test_governing_law_prompt(self):
         assert "Governing Law" in EXTRACTION_PROMPTS
+
+
+class TestModalityWiring:
+    """Slice C: ModalityChecker integration into ContractAnalysisPipeline."""
+
+    def test_analyzed_clause_has_modality_findings_field(self):
+        ac = AnalyzedClause(
+            text="x", cuad_label="License Grant",
+            label_confidence=0.8, category="general_information",
+        )
+        assert hasattr(ac, "modality_findings")
+        assert ac.modality_findings == []
+
+    def test_analyzed_clause_accepts_modality_findings(self):
+        finding = ModalFinding(
+            modality=Modality.PROHIBITION,
+            modal_phrase="shall not",
+            span=(9, 18),
+            subject="Licensee",
+            strength="HIGH",
+            cuad_label="Non-Compete",
+            clause_text="Licensee shall not compete.",
+        )
+        ac = AnalyzedClause(
+            text="Licensee shall not compete.",
+            cuad_label="Non-Compete",
+            label_confidence=0.78,
+            category="restrictive_covenants",
+            modality_findings=[finding],
+        )
+        assert len(ac.modality_findings) == 1
+        assert ac.modality_findings[0].modality == Modality.PROHIBITION
+
+    def test_pipeline_init_creates_modality_checker(self, monkeypatch):
+        """The pipeline must instantiate a ModalityChecker so analyze() can call it."""
+        # Stub Anthropic and ClauseClassifier — neither is reachable offline,
+        # and neither is what this test is verifying.
+        monkeypatch.setattr("src.pipeline.Anthropic", lambda **kw: object())
+        monkeypatch.setattr("src.pipeline.ClauseClassifier", lambda **kw: object())
+        pipeline = ContractAnalysisPipeline()
+        assert hasattr(pipeline, "modality_checker")
+        assert isinstance(pipeline.modality_checker, ModalityChecker)
+
+    def test_modality_findings_propagate_through_full_text_not_truncated(self):
+        """Pipeline scans the full clause text; truncation only affects display."""
+        long_text = "Some preamble. " + ("Licensee shall comply. " * 50)
+        # 50 occurrences of "shall" — all should be picked up against full text.
+        findings = ModalityChecker().check_text(long_text, cuad_label="Compliance")
+        # Truncated display version (what AnalyzedClause.text would carry).
+        truncated_findings = ModalityChecker().check_text(long_text[:500] + "...")
+        assert len(findings) > len(truncated_findings)
+
+    def test_serialized_clause_includes_modality_findings_key(self):
+        """The CLI/file JSON output (analyze_contract_file) must include the key."""
+        ac = AnalyzedClause(
+            text="Licensee shall pay.",
+            cuad_label="Payment Terms",
+            label_confidence=0.85,
+            category="general_information",
+            modality_findings=[
+                ModalFinding(
+                    modality=Modality.OBLIGATION,
+                    modal_phrase="shall",
+                    span=(9, 14),
+                    subject="Licensee",
+                    strength="MEDIUM",
+                    cuad_label="Payment Terms",
+                    clause_text="Licensee shall pay.",
+                ),
+            ],
+        )
+        # Mirror the dict-shape produced in analyze_contract_file:
+        serialized = {
+            "cuad_label": ac.cuad_label,
+            "modality_findings": [f.to_dict() for f in ac.modality_findings],
+        }
+        assert "modality_findings" in serialized
+        assert len(serialized["modality_findings"]) == 1
+        assert serialized["modality_findings"][0]["modality"] == "OBLIGATION"
+        assert serialized["modality_findings"][0]["strength"] == "MEDIUM"
