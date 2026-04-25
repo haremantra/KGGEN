@@ -464,3 +464,169 @@ class TestFindModalMatches:
 
     def test_empty_text(self):
         assert find_modal_matches("") == []
+
+
+# ---------------------------------------------------------------------------
+# check_diff: original vs redlined diff primitive
+# ---------------------------------------------------------------------------
+
+class TestCheckDiff:
+
+    def test_identical_text_yields_only_kept(self):
+        text = "Licensee shall pay all fees."
+        diff = ModalityChecker().check_diff(text, text)
+        assert len(diff.kept) == 1
+        assert diff.added == []
+        assert diff.removed == []
+        assert diff.drifted == []
+        assert diff.counts["kept"] == 1
+
+    def test_removed_finding(self):
+        original = "Licensee shall pay all fees."
+        redlined = "The agreement is hereby effective."
+        diff = ModalityChecker().check_diff(original, redlined)
+        assert len(diff.removed) == 1
+        assert diff.removed[0].modality.value == "OBLIGATION"
+        assert diff.kept == []
+        assert diff.added == []
+        assert diff.drifted == []
+
+    def test_added_finding(self):
+        original = "The agreement is hereby effective."
+        redlined = "Licensee shall not assign this agreement."
+        diff = ModalityChecker().check_diff(original, redlined)
+        assert len(diff.added) == 1
+        assert diff.added[0].modality.value == "PROHIBITION"
+        assert diff.kept == []
+        assert diff.removed == []
+        assert diff.drifted == []
+
+    def test_subject_drift(self):
+        """Same modality + phrase, different normalized subject → SUBJECT drift."""
+        from src.modality import DriftKind
+        original = "Licensor shall indemnify the other party."
+        redlined = "Licensee shall indemnify the other party."
+        diff = ModalityChecker().check_diff(original, redlined)
+        assert len(diff.drifted) == 1
+        d = diff.drifted[0]
+        assert d.drift_kind == DriftKind.SUBJECT
+        assert d.original.subject == "Licensor"
+        assert d.redlined.subject == "Licensee"
+        assert diff.kept == []
+        assert diff.added == []
+        assert diff.removed == []
+
+    def test_modality_drift(self):
+        """Same subject, different modality → MODALITY drift."""
+        from src.modality import DriftKind
+        original = "Licensee shall pay all fees."
+        redlined = "Licensee may pay all fees."
+        diff = ModalityChecker().check_diff(original, redlined)
+        assert len(diff.drifted) == 1
+        d = diff.drifted[0]
+        assert d.drift_kind == DriftKind.MODALITY
+        assert d.original.modality.value == "OBLIGATION"
+        assert d.redlined.modality.value == "PERMISSION"
+
+    def test_subject_normalization_in_matching(self):
+        """`The Licensee` and `Licensee` count as the same subject for matching."""
+        original = "Licensee shall pay."
+        redlined = "The Licensee shall pay."
+        diff = ModalityChecker().check_diff(original, redlined)
+        assert len(diff.kept) == 1
+        assert diff.drifted == []
+
+    def test_combined_kept_added_removed_drifted(self):
+        from src.modality import DriftKind
+        original = (
+            "Licensor shall maintain insurance. "
+            "Licensor shall indemnify the other party. "
+            "Licensee may terminate."
+        )
+        redlined = (
+            "Licensor shall maintain insurance. "          # kept
+            "Licensee shall indemnify the other party. "   # SUBJECT drift
+            # `Licensee may terminate` removed
+            "Either party shall not assign rights."        # added (PROHIBITION)
+        )
+        diff = ModalityChecker().check_diff(original, redlined)
+        kinds = [d.drift_kind for d in diff.drifted]
+        assert DriftKind.SUBJECT in kinds
+        assert any(f.modality.value == "PROHIBITION" for f in diff.added)
+        assert any(f.modality.value == "PERMISSION" for f in diff.removed)
+        assert any(f.modality.value == "OBLIGATION" and f.subject == "Licensor"
+                   for f in diff.kept)
+
+    def test_none_subject_does_not_drift_match(self):
+        """A sentence-initial modal (subject=None) should not be paired by
+        subject for MODALITY drift — only exact (None, modality) matches."""
+        original = "Shall pay all fees."         # subject=None, OBLIGATION
+        redlined = "May pay all fees."           # subject=None, PERMISSION
+        diff = ModalityChecker().check_diff(original, redlined)
+        # No subject to drift on → these should be removed + added, not drifted.
+        assert diff.drifted == []
+        assert len(diff.removed) == 1
+        assert len(diff.added) == 1
+
+    def test_counts_match_lists(self):
+        original = "Licensor shall pay. Licensee shall not assign."
+        redlined = "Licensor may pay. Licensee shall not assign."
+        diff = ModalityChecker().check_diff(original, redlined)
+        assert diff.counts["kept"] == len(diff.kept)
+        assert diff.counts["added"] == len(diff.added)
+        assert diff.counts["removed"] == len(diff.removed)
+        assert (diff.counts["drifted_subject"] + diff.counts["drifted_modality"]
+                == len(diff.drifted))
+
+    def test_diff_roundtrips_through_json(self):
+        original = "Licensor shall pay. Licensee may terminate."
+        redlined = "Licensee shall pay. Licensee may not terminate."
+        diff = ModalityChecker().check_diff(original, redlined)
+        blob = json.dumps(diff.to_dict())
+        restored = json.loads(blob)
+        assert "kept" in restored
+        assert "added" in restored
+        assert "removed" in restored
+        assert "drifted" in restored
+        assert "counts" in restored
+
+    def test_empty_inputs(self):
+        diff = ModalityChecker().check_diff("", "")
+        assert diff.kept == []
+        assert diff.added == []
+        assert diff.removed == []
+        assert diff.drifted == []
+
+    def test_drifted_pair_to_dict_includes_both_sides(self):
+        original = "Licensor shall indemnify."
+        redlined = "Licensee shall indemnify."
+        diff = ModalityChecker().check_diff(original, redlined)
+        assert len(diff.drifted) == 1
+        d = diff.drifted[0].to_dict()
+        assert d["drift_kind"] == "SUBJECT"
+        assert d["original"]["subject"] == "Licensor"
+        assert d["redlined"]["subject"] == "Licensee"
+
+
+# ---------------------------------------------------------------------------
+# normalize_subject (public helper)
+# ---------------------------------------------------------------------------
+
+class TestNormalizeSubject:
+
+    @pytest.mark.parametrize("raw,expected", [
+        ("Licensee", "licensee"),
+        ("The Licensee", "licensee"),
+        ("THE  LICENSEE", "licensee"),
+        ("a Vendor", "vendor"),
+        ("an Agent", "agent"),
+        ("Either Party", "either party"),
+    ])
+    def test_canonical_form(self, raw, expected):
+        from src.modality import normalize_subject
+        assert normalize_subject(raw) == expected
+
+    @pytest.mark.parametrize("raw", [None, "", "   "])
+    def test_empty_returns_none(self, raw):
+        from src.modality import normalize_subject
+        assert normalize_subject(raw) is None

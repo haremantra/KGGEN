@@ -24,6 +24,8 @@ Out of scope (deferred):
 import re
 from collections import Counter, defaultdict
 
+from ..modality import normalize_subject as _normalize_subject
+
 from .types import (
     ClausePolarityProfile,
     PolarityFinding,
@@ -41,22 +43,6 @@ _MUTUAL_PATTERNS = re.compile(
 _NEGATIVE_PATTERNS = re.compile(
     r"^(?:neither\s+party|no\s+party)$"
 )
-
-
-def _normalize_subject(subject: str | None) -> str | None:
-    """Lowercase, strip leading article, collapse whitespace.
-
-    Returns None for None or all-whitespace input.
-    """
-    if subject is None:
-        return None
-    s = subject.strip().lower()
-    if not s:
-        return None
-    s = re.sub(r"\s+", " ", s)
-    # Strip leading article only at the start of the string.
-    s = re.sub(r"^(?:the|a|an)\s+", "", s)
-    return s or None
 
 
 def _classify_subject_kind(normalized: str | None) -> SubjectKind:

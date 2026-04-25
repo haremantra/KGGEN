@@ -64,3 +64,49 @@ class ModalityReport:
             "findings": [f.to_dict() for f in self.findings],
             "counts": dict(self.counts),
         }
+
+
+class DriftKind(str, Enum):
+    """How a paired finding changed between original and redlined text."""
+    SUBJECT = "SUBJECT"      # same modality + phrase, different normalized subject
+    MODALITY = "MODALITY"    # same normalized subject, different modality
+
+
+@dataclass
+class DriftPair:
+    """One original/redlined ModalFinding pair flagged as drifted."""
+    original: ModalFinding
+    redlined: ModalFinding
+    drift_kind: DriftKind
+
+    def to_dict(self) -> dict:
+        return {
+            "drift_kind": self.drift_kind.value,
+            "original": self.original.to_dict(),
+            "redlined": self.redlined.to_dict(),
+        }
+
+
+@dataclass
+class ModalityDiff:
+    """Structured diff between two text states' modality findings.
+
+    Primitive for redline-compliance verdicts: FAITHFUL ≈ kept;
+    MISSED ≈ removed; PHANTOM ≈ added; DRIFTED ≈ drifted (subject and/or
+    modality). Verdict assignment requires memo/baseline context the
+    primitive doesn't carry — that's the redline-compliance layer's job.
+    """
+    kept: list[ModalFinding] = field(default_factory=list)
+    added: list[ModalFinding] = field(default_factory=list)
+    removed: list[ModalFinding] = field(default_factory=list)
+    drifted: list[DriftPair] = field(default_factory=list)
+    counts: dict[str, int] = field(default_factory=dict)
+
+    def to_dict(self) -> dict:
+        return {
+            "kept": [f.to_dict() for f in self.kept],
+            "added": [f.to_dict() for f in self.added],
+            "removed": [f.to_dict() for f in self.removed],
+            "drifted": [d.to_dict() for d in self.drifted],
+            "counts": dict(self.counts),
+        }

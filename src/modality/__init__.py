@@ -28,17 +28,29 @@ Strength is intentionally categorical (``LOW`` / ``MEDIUM`` / ``HIGH``) — see
 Numeric confidence in a regex-only layer would imply false precision.
 """
 
-from .types import Modality, ModalFinding, ModalityReport, Strength
+from .types import (
+    DriftKind,
+    DriftPair,
+    Modality,
+    ModalFinding,
+    ModalityDiff,
+    ModalityReport,
+    Strength,
+)
 from .rules import ModalRule, MODAL_RULES, find_modal_matches
-from .checker import ModalityChecker
+from .checker import ModalityChecker, normalize_subject
 
 __all__ = [
     "Modality",
     "ModalFinding",
     "ModalityReport",
+    "ModalityDiff",
+    "DriftKind",
+    "DriftPair",
     "Strength",
     "ModalRule",
     "MODAL_RULES",
     "find_modal_matches",
     "ModalityChecker",
+    "normalize_subject",
 ]
