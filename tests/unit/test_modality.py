@@ -18,6 +18,7 @@ from src.modality import (
     ModalityReport,
     find_modal_matches,
 )
+from src.modality.types import Strength as StrengthType  # noqa: F401  (typed-alias check)
 
 
 # ---------------------------------------------------------------------------
@@ -119,6 +120,22 @@ class TestProhibition:
             f"expected PROHIBITION in {text!r}, got {modalities}"
         )
 
+    @pytest.mark.parametrize("text", [
+        "IN NO EVENT SHALL Licensor be liable for indirect damages.",
+        "In no event will the Provider exceed the cap.",
+        "AT NO TIME SHALL Licensee disclose the source code.",
+        "Under no circumstances may the parties amend this Agreement orally.",
+    ])
+    def test_reversed_order_legal_boilerplate(self, text):
+        """`IN NO EVENT SHALL ...` must classify as PROHIBITION, not OBLIGATION."""
+        findings = ModalityChecker().check_text(text)
+        modalities = [f.modality for f in findings]
+        assert Modality.PROHIBITION in modalities, (
+            f"expected PROHIBITION in {text!r}, got {modalities}"
+        )
+        # The bare-modal OBLIGATION rule must be suppressed by overlap.
+        assert Modality.OBLIGATION not in modalities
+
 
 class TestEntitlement:
 
@@ -169,6 +186,31 @@ class TestSubjectExtraction:
         assert subj is not None
         assert "Licensee" in subj
         assert "conditions" not in subj  # bounded by the comma
+
+    def test_paragraph_break_bounds_subject(self):
+        """A blank line resets the subject window so prior-paragraph text doesn't leak in."""
+        text = (
+            "1. RECITALS\n"
+            "The parties wish to enter into a license arrangement\n\n"
+            "Licensee shall pay the License Fee on the Effective Date."
+        )
+        findings = ModalityChecker().check_text(text)
+        obligations = [f for f in findings if f.modality == Modality.OBLIGATION]
+        assert obligations
+        subj = obligations[0].subject
+        assert subj is not None
+        assert "Licensee" in subj
+        assert "RECITALS" not in subj
+        assert "license arrangement" not in subj
+
+    def test_single_newline_does_not_break_subject(self):
+        """Soft line wraps mid-clause should not break the subject window."""
+        text = "Licensee\nshall comply with the terms set forth herein."
+        findings = ModalityChecker().check_text(text)
+        obligations = [f for f in findings if f.modality == Modality.OBLIGATION]
+        assert obligations
+        assert obligations[0].subject is not None
+        assert "Licensee" in obligations[0].subject
 
 
 # ---------------------------------------------------------------------------
@@ -272,7 +314,7 @@ class TestToDict:
             modal_phrase="shall",
             span=(9, 14),
             subject="Licensee",
-            confidence=0.75,
+            strength="MEDIUM",
             cuad_label="Parties",
             clause_text=long_text,
         )
@@ -286,7 +328,7 @@ class TestToDict:
             modal_phrase="shall",
             span=(9, 14),
             subject="Licensee",
-            confidence=0.75,
+            strength="MEDIUM",
             clause_text="Licensee shall pay.",
         )
         d = finding.to_dict()
@@ -298,10 +340,21 @@ class TestToDict:
             modal_phrase="shall not",
             span=(0, 9),
             subject=None,
-            confidence=0.9,
+            strength="HIGH",
         )
         d = finding.to_dict()
         assert d["modality"] == "PROHIBITION"
+
+    def test_strength_serialized_as_string(self):
+        finding = ModalFinding(
+            modality=Modality.OBLIGATION,
+            modal_phrase="shall",
+            span=(0, 5),
+            strength="MEDIUM",
+        )
+        d = finding.to_dict()
+        assert d["strength"] == "MEDIUM"
+        assert isinstance(d["strength"], str)
 
     def test_report_roundtrips_through_json(self, sample_contract_analysis):
         report = ModalityChecker().check_analysis(sample_contract_analysis)
@@ -345,6 +398,56 @@ class TestMinimalContract:
         findings = ModalityChecker().check_text(minimal_contract_text)
         entitlements = [f for f in findings if f.modality == Modality.ENTITLEMENT]
         assert len(entitlements) == 0
+
+
+# ---------------------------------------------------------------------------
+# Strength categorical (no floats)
+# ---------------------------------------------------------------------------
+
+class TestStrength:
+
+    def test_all_rule_strengths_are_categorical_strings(self):
+        valid = {"LOW", "MEDIUM", "HIGH"}
+        for rule in MODAL_RULES:
+            assert isinstance(rule.strength, str), (
+                f"{rule.name}: expected categorical string strength"
+            )
+            assert rule.strength in valid, (
+                f"{rule.name}: {rule.strength!r} not in {valid}"
+            )
+
+    def test_phrasal_patterns_are_high(self):
+        """Multi-word locutions and unambiguous phrasings are HIGH."""
+        for rule in MODAL_RULES:
+            if rule.name in {
+                "prohibition_modal_not",
+                "prohibition_no_event_reversed",
+                "prohibition_modal_no_event",
+                "prohibition_no_party",
+                "prohibition_neither_party",
+                "obligation_agrees_to",
+                "entitlement_optional",
+            }:
+                assert rule.strength == "HIGH", f"{rule.name} should be HIGH"
+
+    def test_bare_modal_verbs_are_medium(self):
+        """Bare `shall`/`may` carry less unambiguous force."""
+        bare = {r.name for r in MODAL_RULES if r.name in {"obligation_modal", "permission_may"}}
+        assert bare == {"obligation_modal", "permission_may"}
+        for rule in MODAL_RULES:
+            if rule.name in bare:
+                assert rule.strength == "MEDIUM", f"{rule.name} should be MEDIUM"
+
+    def test_finding_strength_propagates_from_rule(self):
+        """`shall not` (HIGH rule) → finding.strength == 'HIGH'."""
+        findings = ModalityChecker().check_text("Licensee shall not disclose.")
+        assert findings
+        assert findings[0].strength == "HIGH"
+
+    def test_bare_shall_finding_is_medium(self):
+        findings = ModalityChecker().check_text("Licensee shall pay the fees.")
+        assert findings
+        assert findings[0].strength == "MEDIUM"
 
 
 # ---------------------------------------------------------------------------

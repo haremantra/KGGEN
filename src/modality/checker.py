@@ -10,18 +10,21 @@ from .rules import find_modal_matches
 from .types import ModalFinding, Modality, ModalityReport
 
 
-_SUBJECT_BOUNDARY = re.compile(r"[.;:,!?]")
-_WORD = re.compile(r"\S+")
+# Subject extraction stops at sentence/clause punctuation OR at a paragraph
+# break (blank line). Single newlines are intentionally NOT boundaries —
+# legal prose often line-wraps mid-clause without breaking the subject.
+_SUBJECT_BOUNDARY = re.compile(r"[.;:,!?]|\n\s*\n")
 
 
 def _extract_subject(text: str, modal_start: int) -> str | None:
     """Return up to 6 words preceding ``modal_start`` within the same clause.
 
     Returns None if the modal is sentence-initial (nothing meaningful before it).
-    Clause boundaries are terminated by ``. ; : , ! ?``.
+    Clause boundaries are terminated by ``. ; : , ! ?`` or a blank line.
     """
     pre = text[:modal_start]
-    # Walk backwards to nearest clause boundary
+    # Walk forward through all boundaries; the last one before modal_start
+    # marks the start of our subject window.
     boundary = 0
     for m in _SUBJECT_BOUNDARY.finditer(pre):
         boundary = m.end()
@@ -59,7 +62,7 @@ class ModalityChecker:
                 modal_phrase=match.group(0),
                 span=(start, end),
                 subject=_extract_subject(text, start),
-                confidence=rule.strength,
+                strength=rule.strength,
                 cuad_label=cuad_label,
                 clause_text=text,
             ))

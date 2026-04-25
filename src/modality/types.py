@@ -2,10 +2,18 @@
 
 Defines the modality taxonomy (obligation / permission / prohibition /
 entitlement) and the finding/report dataclasses returned by the checker.
+
+Strength is categorical (LOW/MEDIUM/HIGH), matching the convention in
+``src/extraction/extractor.py`` (``CONFIDENCE_MAP``). Numeric scores invite
+false precision; the rule layer doesn't have the data to support a posterior.
 """
 
 from dataclasses import dataclass, field
 from enum import Enum
+from typing import Literal
+
+
+Strength = Literal["LOW", "MEDIUM", "HIGH"]
 
 
 class Modality(str, Enum):
@@ -24,7 +32,7 @@ class ModalFinding:
     modal_phrase: str
     span: tuple[int, int]
     subject: str | None = None
-    confidence: float = 1.0
+    strength: Strength = "HIGH"
     cuad_label: str | None = None
     clause_text: str = ""
 
@@ -37,7 +45,7 @@ class ModalFinding:
             "modal_phrase": self.modal_phrase,
             "span": list(self.span),
             "subject": self.subject,
-            "confidence": self.confidence,
+            "strength": self.strength,
             "cuad_label": self.cuad_label,
             "clause_text": text,
         }

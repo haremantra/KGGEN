@@ -1,14 +1,19 @@
 """Regex rules for deontic modality detection.
 
 Rules are ordered by priority: prohibitions first (so "shall not" wins over
-"shall"), then obligations, entitlements, and permissions. Each rule has a
-confidence reflecting how unambiguous the phrasing is.
+"shall"), then obligations, entitlements, and permissions. Strength is
+categorical (HIGH/MEDIUM/LOW) — explicit phrasal patterns are HIGH, bare
+modal verbs are MEDIUM. LOW is reserved for future LLM-derived weak signals.
 """
 
 import re
 from dataclasses import dataclass
+from typing import Literal
 
 from .types import Modality
+
+
+Strength = Literal["LOW", "MEDIUM", "HIGH"]
 
 
 @dataclass
@@ -16,7 +21,7 @@ class ModalRule:
     """A single modality regex rule."""
     pattern: re.Pattern
     modality: Modality
-    strength: float
+    strength: Strength
     name: str
 
 
@@ -31,31 +36,45 @@ MODAL_RULES: list[ModalRule] = [
     ModalRule(
         pattern=_compile(r"\b(?:shall|must|will|may|can)\s+not\b"),
         modality=Modality.PROHIBITION,
-        strength=0.9,
+        strength="HIGH",
         name="prohibition_modal_not",
     ),
+    # Reversed-order legal boilerplate: "IN NO EVENT SHALL ...",
+    # "AT NO TIME SHALL ...", "UNDER NO CIRCUMSTANCES SHALL ...".
     ModalRule(
-        pattern=_compile(r"\bshall\s+(?:in\s+no\s+event|at\s+no\s+time)\b"),
+        pattern=_compile(
+            r"\b(?:in\s+no\s+event|at\s+no\s+time|under\s+no\s+circumstances)"
+            r"\s+(?:shall|will|may|can)\b"
+        ),
         modality=Modality.PROHIBITION,
-        strength=0.9,
-        name="prohibition_shall_no_event",
+        strength="HIGH",
+        name="prohibition_no_event_reversed",
+    ),
+    # Forward-order variant kept for completeness.
+    ModalRule(
+        pattern=_compile(
+            r"\b(?:shall|will|may|can)\s+(?:in\s+no\s+event|at\s+no\s+time)\b"
+        ),
+        modality=Modality.PROHIBITION,
+        strength="HIGH",
+        name="prohibition_modal_no_event",
     ),
     ModalRule(
         pattern=_compile(r"\bis\s+(?:not\s+permitted|prohibited|forbidden)\b"),
         modality=Modality.PROHIBITION,
-        strength=0.85,
+        strength="HIGH",
         name="prohibition_is_prohibited",
     ),
     ModalRule(
         pattern=_compile(r"\bno\s+party\s+(?:shall|may|will)\b"),
         modality=Modality.PROHIBITION,
-        strength=0.9,
+        strength="HIGH",
         name="prohibition_no_party",
     ),
     ModalRule(
         pattern=_compile(r"\bneither\s+party\s+(?:shall|may|will)\b"),
         modality=Modality.PROHIBITION,
-        strength=0.9,
+        strength="HIGH",
         name="prohibition_neither_party",
     ),
 
@@ -66,7 +85,7 @@ MODAL_RULES: list[ModalRule] = [
             r"\b(?:at\s+its\s+(?:sole\s+)?option|may\s+(?:elect|choose)|has\s+the\s+option)\b"
         ),
         modality=Modality.ENTITLEMENT,
-        strength=0.85,
+        strength="HIGH",
         name="entitlement_optional",
     ),
 
@@ -77,7 +96,7 @@ MODAL_RULES: list[ModalRule] = [
             r"|\bis\s+(?:obligated|required)\s+to\b"
         ),
         modality=Modality.OBLIGATION,
-        strength=0.9,
+        strength="HIGH",
         name="obligation_agrees_to",
     ),
     ModalRule(
@@ -85,7 +104,7 @@ MODAL_RULES: list[ModalRule] = [
         # PROHIBITION rules via overlap suppression.
         pattern=_compile(r"\b(?:shall|must|will)\b"),
         modality=Modality.OBLIGATION,
-        strength=0.75,
+        strength="MEDIUM",
         name="obligation_modal",
     ),
 
@@ -95,13 +114,13 @@ MODAL_RULES: list[ModalRule] = [
             r"\bis\s+(?:entitled|permitted)\s+to\b|\bhas\s+the\s+right\s+to\b"
         ),
         modality=Modality.PERMISSION,
-        strength=0.85,
+        strength="HIGH",
         name="permission_entitled_to",
     ),
     ModalRule(
         pattern=_compile(r"\bmay\b"),
         modality=Modality.PERMISSION,
-        strength=0.75,
+        strength="MEDIUM",
         name="permission_may",
     ),
 ]
