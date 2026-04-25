@@ -306,7 +306,13 @@ def analyze_contract_file(
     include_dependencies: bool = True,
     include_resolution: bool = False,
     index_for_search: bool = False,
-) -> tuple["ContractAnalysis", "RiskAssessment | None", "InterdependencyReport | None"]:
+    include_polarity: bool = True,
+) -> tuple[
+    "ContractAnalysis",
+    "RiskAssessment | None",
+    "InterdependencyReport | None",
+    "PolarityReport | None",
+]:
     """Analyze a contract file and optionally save results.
 
     Args:
@@ -317,16 +323,17 @@ def analyze_contract_file(
         include_dependencies: Whether to run interdependency analysis
         include_resolution: Whether to run entity resolution
         index_for_search: Whether to index entities/triples in search service
+        include_polarity: Whether to run polarity (FM-B06 / FM-D02) analysis
 
     Returns:
-        Tuple of (ContractAnalysis, RiskAssessment or None, InterdependencyReport or None)
+        Tuple of (ContractAnalysis, RiskAssessment or None,
+        InterdependencyReport or None, PolarityReport or None)
     """
-    from .utils.pdf_reader import extract_text_from_pdf
-
     path = Path(file_path)
 
-    # Read file
+    # Read file (lazy import: pdfplumber is only needed for PDFs)
     if path.suffix.lower() == '.pdf':
+        from .utils.pdf_reader import extract_text_from_pdf
         contract_text = extract_text_from_pdf(path)
     else:
         with open(path, 'r', encoding='utf-8', errors='ignore') as f:
@@ -371,6 +378,19 @@ def analyze_contract_file(
         print(f"  Dependencies: {len(dep_report.graph.edges)}")
         print(f"  Contradictions: {len(dep_report.contradictions)}")
         print(f"  Missing requirements: {len(dep_report.missing_requirements)}")
+
+    # Run polarity (FM-B06 / FM-D02) analysis. Pure regex over modality
+    # findings already attached to each clause; no LLM, negligible cost.
+    polarity_report = None
+    if include_polarity:
+        from .polarity import PolarityChecker
+        polarity_report = PolarityChecker().check_analysis(result)
+        sev = polarity_report.counts_by_severity
+        print(f"\nPolarity Analysis:")
+        print(f"  Profiles: {len(polarity_report.profiles)}")
+        print(f"  Findings: {len(polarity_report.findings)}  "
+              f"(CRITICAL {sev.get('CRITICAL', 0)}, HIGH {sev.get('HIGH', 0)}, "
+              f"MODERATE {sev.get('MODERATE', 0)}, LOW {sev.get('LOW', 0)})")
 
     # Run entity resolution (optional)
     if include_resolution:
@@ -433,8 +453,12 @@ def analyze_contract_file(
         if dep_report:
             output_data["interdependency"] = dep_report.to_dict()
 
+        # Add polarity report to output
+        if polarity_report:
+            output_data["polarity"] = polarity_report.to_dict()
+
         with open(output_path, 'w') as f:
             json.dump(output_data, f, indent=2)
         print(f"Results saved to: {output_path}")
 
-    return result, risk_assessment, dep_report
+    return result, risk_assessment, dep_report, polarity_report

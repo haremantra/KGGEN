@@ -181,7 +181,7 @@ def cmd_analyze(args):
     print(f"Analyzing: {file_path}")
 
     # Run full pipeline
-    analysis, risk, dep_report = analyze_contract_file(
+    analysis, risk, dep_report, polarity = analyze_contract_file(
         str(file_path),
         output_path=args.output,
         include_risk=True,
@@ -205,6 +205,12 @@ def cmd_analyze(args):
         print(f"\nDependencies: {len(dep_report.graph.edges)}")
         print(f"Contradictions: {len(dep_report.contradictions)}")
         print(f"Missing requirements: {len(dep_report.missing_requirements)}")
+
+    if polarity:
+        sev = polarity.counts_by_severity
+        print(f"\nPolarity Findings: {len(polarity.findings)}  "
+              f"(MODERATE {sev.get('MODERATE', 0)}, HIGH {sev.get('HIGH', 0)}, "
+              f"CRITICAL {sev.get('CRITICAL', 0)})")
 
     if args.output:
         print(f"\nResults saved to: {args.output}")

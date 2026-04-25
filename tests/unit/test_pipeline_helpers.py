@@ -180,3 +180,141 @@ class TestModalityWiring:
         assert len(serialized["modality_findings"]) == 1
         assert serialized["modality_findings"][0]["modality"] == "OBLIGATION"
         assert serialized["modality_findings"][0]["strength"] == "MEDIUM"
+
+
+class TestPolarityWiring:
+    """Slice 1 of the polarity integration: PolarityChecker runs as part of
+    analyze_contract_file and its report is included in the return tuple
+    and JSON output."""
+
+    def test_analyze_contract_file_returns_4_tuple(self, monkeypatch, tmp_path):
+        """The function returns (analysis, risk, deps, polarity)."""
+        from src.pipeline import analyze_contract_file
+        from src.polarity import PolarityReport
+
+        # Fake everything heavy: file IO, classifier, LLM, pipeline.analyze.
+        sample = tmp_path / "fake.txt"
+        sample.write_text("Licensee shall pay.")
+
+        fake_analysis = ContractAnalysis(
+            contract_id="fake", total_clauses=1, summary={},
+            analyzed_clauses=[
+                AnalyzedClause(
+                    text="Licensee shall pay.",
+                    cuad_label="Payment Terms",
+                    label_confidence=0.9,
+                    category="general_information",
+                    modality_findings=[
+                        ModalFinding(
+                            modality=Modality.OBLIGATION,
+                            modal_phrase="shall",
+                            span=(9, 14),
+                            subject="Licensee",
+                            strength="MEDIUM",
+                            cuad_label="Payment Terms",
+                            clause_text="Licensee shall pay.",
+                        ),
+                    ],
+                ),
+            ],
+        )
+
+        # Stub the heavy bits.
+        monkeypatch.setattr(
+            "src.pipeline.ContractAnalysisPipeline",
+            lambda *a, **kw: type("FakePipeline", (), {
+                "analyze": lambda self, text, contract_id="x": fake_analysis,
+            })(),
+        )
+
+        result, risk, deps, polarity = analyze_contract_file(
+            str(sample),
+            include_risk=False,
+            include_dependencies=False,
+            include_polarity=True,
+        )
+        assert result is fake_analysis
+        assert risk is None
+        assert deps is None
+        assert isinstance(polarity, PolarityReport)
+        assert polarity.contract_id == "fake"
+        assert len(polarity.profiles) == 1
+
+    def test_analyze_contract_file_skips_polarity_when_disabled(
+        self, monkeypatch, tmp_path,
+    ):
+        from src.pipeline import analyze_contract_file
+
+        sample = tmp_path / "fake.txt"
+        sample.write_text("x")
+
+        fake_analysis = ContractAnalysis(
+            contract_id="fake", total_clauses=0,
+            analyzed_clauses=[], summary={},
+        )
+        monkeypatch.setattr(
+            "src.pipeline.ContractAnalysisPipeline",
+            lambda *a, **kw: type("FakePipeline", (), {
+                "analyze": lambda self, text, contract_id="x": fake_analysis,
+            })(),
+        )
+
+        _, _, _, polarity = analyze_contract_file(
+            str(sample),
+            include_risk=False,
+            include_dependencies=False,
+            include_polarity=False,
+        )
+        assert polarity is None
+
+    def test_output_json_contains_polarity_section(self, monkeypatch, tmp_path):
+        """When output_path is set, the saved JSON must include a 'polarity' key."""
+        import json as _json
+        from src.pipeline import analyze_contract_file
+
+        sample = tmp_path / "fake.txt"
+        sample.write_text("Licensee shall pay.")
+        out = tmp_path / "out.json"
+
+        fake_analysis = ContractAnalysis(
+            contract_id="fake", total_clauses=1, summary={},
+            analyzed_clauses=[
+                AnalyzedClause(
+                    text="Licensee shall pay.",
+                    cuad_label="Payment Terms",
+                    label_confidence=0.9,
+                    category="general_information",
+                    modality_findings=[
+                        ModalFinding(
+                            modality=Modality.OBLIGATION,
+                            modal_phrase="shall",
+                            span=(9, 14),
+                            subject="Licensee",
+                            strength="MEDIUM",
+                            cuad_label="Payment Terms",
+                            clause_text="Licensee shall pay.",
+                        ),
+                    ],
+                ),
+            ],
+        )
+        monkeypatch.setattr(
+            "src.pipeline.ContractAnalysisPipeline",
+            lambda *a, **kw: type("FakePipeline", (), {
+                "analyze": lambda self, text, contract_id="x": fake_analysis,
+            })(),
+        )
+
+        analyze_contract_file(
+            str(sample),
+            output_path=str(out),
+            include_risk=False,
+            include_dependencies=False,
+            include_polarity=True,
+        )
+        payload = _json.loads(out.read_text())
+        assert "polarity" in payload
+        assert payload["polarity"]["contract_id"] == "fake"
+        assert "profiles" in payload["polarity"]
+        assert "findings" in payload["polarity"]
+        assert "counts_by_severity" in payload["polarity"]
