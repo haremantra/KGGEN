@@ -14,6 +14,7 @@ from anthropic import Anthropic
 from .classification.classifier import ClauseClassifier, ClassifiedClause, ClauseLabel
 from .classification.cuad_labels import CUAD_LABELS
 from .config import settings
+from .modality import ModalFinding, ModalityChecker
 
 
 @dataclass
@@ -34,6 +35,7 @@ class AnalyzedClause:
     extracted_values: list[ExtractedValue] = field(default_factory=list)
     entities: list[str] = field(default_factory=list)
     relationships: list[dict] = field(default_factory=list)
+    modality_findings: list[ModalFinding] = field(default_factory=list)
 
 
 @dataclass
@@ -100,6 +102,7 @@ class ContractAnalysisPipeline:
         self.extraction_threshold = extraction_threshold
         self.classifier = ClauseClassifier(use_qdrant=False)
         self.client = Anthropic(api_key=settings.anthropic_api_key)
+        self.modality_checker = ModalityChecker()
         self._initialized = False
 
     def initialize(self):
@@ -161,6 +164,14 @@ class ContractAnalysisPipeline:
                 label_info.description
             )
 
+            # Run modality scan against the FULL clause text (regex, no LLM,
+            # negligible cost). Findings carry their own clause_text snapshot,
+            # so they remain meaningful even though AnalyzedClause.text below
+            # is truncated to 500 chars for display.
+            modality_findings = self.modality_checker.check_text(
+                clause.text, cuad_label=label_name
+            )
+
             analyzed_clauses.append(AnalyzedClause(
                 text=clause.text[:500] + "..." if len(clause.text) > 500 else clause.text,
                 cuad_label=label_name,
@@ -169,6 +180,7 @@ class ContractAnalysisPipeline:
                 extracted_values=extracted.get("values", []),
                 entities=extracted.get("entities", []),
                 relationships=extracted.get("relationships", []),
+                modality_findings=modality_findings,
             ))
             extraction_count += 1
 
@@ -407,6 +419,7 @@ def analyze_contract_file(
                     ],
                     "entities": c.entities,
                     "relationships": c.relationships,
+                    "modality_findings": [f.to_dict() for f in c.modality_findings],
                 }
                 for c in result.analyzed_clauses
             ],
