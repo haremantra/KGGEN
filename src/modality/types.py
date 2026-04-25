@@ -35,6 +35,7 @@ class ModalFinding:
     strength: Strength = "HIGH"
     cuad_label: str | None = None
     clause_text: str = ""
+    predicate_hint: str = ""
 
     def to_dict(self) -> dict:
         text = self.clause_text
@@ -48,6 +49,7 @@ class ModalFinding:
             "strength": self.strength,
             "cuad_label": self.cuad_label,
             "clause_text": text,
+            "predicate_hint": self.predicate_hint,
         }
 
 

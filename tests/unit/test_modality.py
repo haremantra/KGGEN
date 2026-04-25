@@ -557,16 +557,57 @@ class TestCheckDiff:
         assert any(f.modality.value == "OBLIGATION" and f.subject == "Licensor"
                    for f in diff.kept)
 
-    def test_none_subject_does_not_drift_match(self):
-        """A sentence-initial modal (subject=None) should not be paired by
-        subject for MODALITY drift — only exact (None, modality) matches."""
+    def test_none_subject_drift_match_via_predicate_hint(self):
+        """Predicate-aware matching: even with no subject, a shared
+        predicate_hint anchors a MODALITY drift pair."""
+        from src.modality import DriftKind
         original = "Shall pay all fees."         # subject=None, OBLIGATION
         redlined = "May pay all fees."           # subject=None, PERMISSION
         diff = ModalityChecker().check_diff(original, redlined)
-        # No subject to drift on → these should be removed + added, not drifted.
-        assert diff.drifted == []
-        assert len(diff.removed) == 1
-        assert len(diff.added) == 1
+        # Same predicate_hint ("pay all fees") + same (None) subject + different
+        # modality -> MODALITY drift (the right answer; the old behavior treated
+        # this as remove+add because subject was None).
+        assert len(diff.drifted) == 1
+        assert diff.drifted[0].drift_kind == DriftKind.MODALITY
+        assert diff.removed == []
+        assert diff.added == []
+
+    def test_predicate_hint_disambiguates_same_subject_modality(self):
+        """The motivating bugfix: two distinct (Licensee, OBLIGATION)
+        statements no longer collide as `kept` just because they share
+        subject and modality. The predicate hint differentiates them so
+        "Licensee shall pay X" and "Licensee shall pay Y" are not
+        spuriously matched."""
+        original = "Licensee shall pay all fees. Licensor shall maintain insurance."
+        redlined = "Licensee shall pay license royalties. Licensor shall maintain insurance."
+
+        diff = ModalityChecker().check_diff(original, redlined)
+        kept_predicates = [f.predicate_hint for f in diff.kept]
+        # The unchanged Licensor obligation should be kept.
+        assert "maintain insurance" in kept_predicates
+        # The "Licensee shall pay" obligations have different predicates
+        # ("pay all fees" vs "pay license royalties") and must NOT collide
+        # as kept — they should appear as removed/added.
+        removed_predicates = [f.predicate_hint for f in diff.removed]
+        added_predicates = [f.predicate_hint for f in diff.added]
+        assert "pay all fees" in removed_predicates
+        assert "pay license royalties" in added_predicates
+        # Most importantly: NOT in kept.
+        assert "pay all fees" not in kept_predicates
+        assert "pay license royalties" not in kept_predicates
+
+    def test_predicate_hint_populated_in_findings(self):
+        """check_text attaches a predicate_hint to each finding."""
+        findings = ModalityChecker().check_text("Licensee shall pay all fees on the date.")
+        assert findings
+        assert findings[0].predicate_hint
+        # First three lowercased word tokens after the modal verb.
+        assert findings[0].predicate_hint == "pay all fees"
+
+    def test_predicate_hint_stops_at_sentence_boundary(self):
+        findings = ModalityChecker().check_text("Licensee shall pay. The agreement continues.")
+        assert findings
+        assert findings[0].predicate_hint == "pay"  # period truncates
 
     def test_counts_match_lists(self):
         original = "Licensor shall pay. Licensee shall not assign."

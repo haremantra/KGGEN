@@ -93,7 +93,9 @@ class RedlineVerdictAssigner:
                 )
             elif rec.rec_type == "MODIFY":
                 verdicts.append(
-                    self._assign_modify(rec, diff, drift_used)
+                    self._assign_modify(
+                        rec, diff, drift_used, removed_used, added_used
+                    )
                 )
 
         # Anything left in `added` or `drifted.redlined` that wasn't claimed
@@ -203,12 +205,14 @@ class RedlineVerdictAssigner:
         rec: Recommendation,
         diff: ModalityDiff,
         drift_used: list[bool],
+        removed_used: list[bool],
+        added_used: list[bool],
     ) -> VerdictAssignment:
         before_subj_norm = normalize_subject(rec.before_subject)
         expected_subj_norm = normalize_subject(rec.expected_subject)
 
         # First pass: a drift pair whose ORIGINAL side matches the rec's
-        # before-state.
+        # before-state. Drift pairs are the cleanest evidence of a MODIFY.
         for i, dp in enumerate(diff.drifted):
             if drift_used[i]:
                 continue
@@ -234,9 +238,56 @@ class RedlineVerdictAssigner:
                            "expected (modality, subject)."),
                 )
 
+        # Fallback: predicate-aware matching may have classified the change
+        # as remove + add (e.g. predicate-only edits where (subject, modality)
+        # didn't change). Pair them by checking the rec's before/after states.
+        matched_removed_idx: int | None = None
+        for i, f in enumerate(diff.removed):
+            if removed_used[i]:
+                continue
+            if _matches_finding(f, rec.before_modality, before_subj_norm):
+                matched_removed_idx = i
+                break
+
+        matched_added_idx: int | None = None
+        for j, f in enumerate(diff.added):
+            if added_used[j]:
+                continue
+            if _matches_finding(f, rec.expected_modality, expected_subj_norm):
+                matched_added_idx = j
+                break
+
+        if matched_removed_idx is not None and matched_added_idx is not None:
+            removed_used[matched_removed_idx] = True
+            added_used[matched_added_idx] = True
+            return VerdictAssignment(
+                rec_id=rec.rec_id, rec_type="MODIFY",
+                verdict=Verdict.FAITHFUL,
+                matched_findings=[
+                    diff.removed[matched_removed_idx],
+                    diff.added[matched_added_idx],
+                ],
+                notes=("MODIFY rec satisfied: original-state finding removed "
+                       "and expected-state finding added (paired via "
+                       "predicate-aware diff)."),
+            )
+
+        if matched_removed_idx is not None:
+            # The redline acted on the right clause but produced something
+            # other than what the memo asked for.
+            removed_used[matched_removed_idx] = True
+            return VerdictAssignment(
+                rec_id=rec.rec_id, rec_type="MODIFY",
+                verdict=Verdict.DRIFTED,
+                matched_findings=[diff.removed[matched_removed_idx]],
+                notes=("MODIFY rec: original-state finding was removed but "
+                       "no `added` finding matches the expected (modality, "
+                       "subject)."),
+            )
+
         return VerdictAssignment(
             rec_id=rec.rec_id, rec_type="MODIFY",
             verdict=Verdict.MISSED if rec.selected else Verdict.EXPECTED_SKIP,
-            notes=("No drift pair matches the rec's before-state."
+            notes=("No drift pair, no removed-before-state matched."
                    if rec.selected else "Unselected; no modification expected."),
         )

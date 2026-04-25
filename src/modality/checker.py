@@ -24,6 +24,28 @@ from .types import (
 _SUBJECT_BOUNDARY = re.compile(r"[.;:,!?]|\n\s*\n")
 _LEADING_ARTICLE = re.compile(r"^(?:the|a|an)\s+", re.IGNORECASE)
 _WHITESPACE = re.compile(r"\s+")
+# Stop the predicate hint at sentence boundaries; commas/semicolons usually
+# don't end a verb phrase the way a period does.
+_PREDICATE_BOUNDARY = re.compile(r"[.!?;]|\n\s*\n")
+_PREDICATE_HINT_TOKENS = 3
+
+
+def _extract_predicate_hint(text: str, modal_end: int) -> str:
+    """Return up to ``_PREDICATE_HINT_TOKENS`` lowercased word tokens
+    immediately following the modal phrase, stopping at the next sentence
+    boundary.
+
+    Predicate hints disambiguate two statements that share the same
+    (subject, modality) — e.g. "Licensee shall pay" vs. "Licensee shall
+    indemnify". Matching by predicate hint as well as subject/modality
+    avoids the false-positive ``kept`` in ModalityChecker.check_diff.
+    """
+    tail = text[modal_end:]
+    boundary = _PREDICATE_BOUNDARY.search(tail)
+    if boundary is not None:
+        tail = tail[: boundary.start()]
+    tokens = tail.strip().split()[:_PREDICATE_HINT_TOKENS]
+    return " ".join(t.lower() for t in tokens)
 
 
 def normalize_subject(subject: str | None) -> str | None:
@@ -92,6 +114,7 @@ class ModalityChecker:
                 strength=rule.strength,
                 cuad_label=cuad_label,
                 clause_text=text,
+                predicate_hint=_extract_predicate_hint(text, end),
             ))
         return findings
 
@@ -136,13 +159,21 @@ class ModalityChecker:
         as the primitive for FAITHFUL/MISSED/DRIFTED/PHANTOM verdicts in a
         redline-compliance layer.
 
-        Greedy 1-to-1 matching across four passes:
-            1. Exact (normalized_subject, modality) -> kept.
-            2. Same (modality, modal_phrase) but different subject -> SUBJECT drift.
-            3. Same (normalized_subject, modal_phrase) but different modality -> BOTH-style.
-               Treated as MODALITY drift (the more salient axis).
-            4. Same normalized_subject, different modality -> MODALITY drift.
-            5. Anything left in original -> removed; anything left in redlined -> added.
+        Matching uses ``predicate_hint`` (the next ~3 word tokens after
+        the modal verb) so two statements that share the same
+        (subject, modality) but talk about different things — e.g.
+        "Licensee shall pay" vs "Licensee shall indemnify" — don't
+        spuriously collide as kept.
+
+        Greedy 1-to-1 matching across three passes:
+            1. Exact (normalized_subject, modality, predicate_hint) -> kept.
+            2. Same (modality, predicate_hint), different subject -> SUBJECT drift.
+            3. Same (normalized_subject, predicate_hint), different modality -> MODALITY drift.
+            4. Anything left in original -> removed; anything left in redlined -> added.
+
+        Note that ``predicate_hint`` may be empty (e.g. modal at end of
+        text). Empty hints can still match — but only if both sides have
+        empty hints, which is uncommon.
         """
         orig = self.check_text(original_text, cuad_label=cuad_label)
         red = self.check_text(redlined_text, cuad_label=cuad_label)
@@ -153,31 +184,31 @@ class ModalityChecker:
         kept: list[ModalFinding] = []
         drifted: list[DriftPair] = []
 
-        def _norm_phrase(p: str) -> str:
-            return (p or "").lower()
-
-        # Pass 1: exact (norm_subject, modality)
+        # Pass 1: exact (norm_subject, modality, predicate_hint)
         for i, of in enumerate(orig):
-            o_key = (normalize_subject(of.subject), of.modality)
+            o_key = (normalize_subject(of.subject), of.modality, of.predicate_hint)
             for j, rf in enumerate(red):
                 if used_red[j]:
                     continue
-                r_key = (normalize_subject(rf.subject), rf.modality)
+                r_key = (normalize_subject(rf.subject), rf.modality, rf.predicate_hint)
                 if o_key == r_key:
                     kept.append(of)
                     used_orig[i] = True
                     used_red[j] = True
                     break
 
-        # Pass 2: same (modality, phrase), different subject -> SUBJECT drift
+        # Pass 2: same (modality, predicate_hint), different subject -> SUBJECT drift.
+        # Skip pairs where both predicate_hints are empty — too loose to be reliable.
         for i, of in enumerate(orig):
             if used_orig[i]:
+                continue
+            if not of.predicate_hint:
                 continue
             for j, rf in enumerate(red):
                 if used_red[j]:
                     continue
                 if (of.modality == rf.modality
-                        and _norm_phrase(of.modal_phrase) == _norm_phrase(rf.modal_phrase)
+                        and of.predicate_hint == rf.predicate_hint
                         and normalize_subject(of.subject) != normalize_subject(rf.subject)):
                     drifted.append(DriftPair(
                         original=of, redlined=rf, drift_kind=DriftKind.SUBJECT,
@@ -186,17 +217,17 @@ class ModalityChecker:
                     used_red[j] = True
                     break
 
-        # Pass 3: same normalized subject (non-None), different modality -> MODALITY drift
+        # Pass 3: same (normalized_subject, predicate_hint), different modality
+        # -> MODALITY drift. Empty predicate_hints can match here too — the
+        # subject anchors the pair.
         for i, of in enumerate(orig):
             if used_orig[i]:
-                continue
-            o_subj = normalize_subject(of.subject)
-            if o_subj is None:
                 continue
             for j, rf in enumerate(red):
                 if used_red[j]:
                     continue
-                if (normalize_subject(rf.subject) == o_subj
+                if (normalize_subject(of.subject) == normalize_subject(rf.subject)
+                        and of.predicate_hint == rf.predicate_hint
                         and of.modality != rf.modality):
                     drifted.append(DriftPair(
                         original=of, redlined=rf, drift_kind=DriftKind.MODALITY,

@@ -167,6 +167,52 @@ class TestModify:
         report = RedlineVerdictAssigner().assign(diff, [rec])
         assert report.verdicts[0].verdict == Verdict.MISSED
 
+    def test_faithful_via_removed_added_pair_fallback(self):
+        """When predicate-aware diffing classifies a MODIFY as remove+add
+        (rather than as a drift pair), the verdict layer should still
+        recognize a FAITHFUL match if both endpoints align."""
+        # Memo: change the predicate of Licensee's obligation. Modality
+        # and subject stay the same, but the predicate changed -> diff
+        # produces remove+add, not a drift pair.
+        diff = ModalityChecker().check_diff(
+            "Licensee shall pay all fees.",
+            "Licensee shall pay license royalties.",
+        )
+        # Confirm the diff classified this as remove+add (not drifted).
+        assert diff.drifted == []
+        assert len(diff.removed) >= 1
+        assert len(diff.added) >= 1
+
+        rec = Recommendation(
+            rec_id="REC-023", rec_type="MODIFY",
+            before_modality=Modality.OBLIGATION,
+            before_subject="Licensee",
+            expected_modality=Modality.OBLIGATION,
+            expected_subject="Licensee",
+            selected=True,
+        )
+        report = RedlineVerdictAssigner().assign(diff, [rec])
+        assert report.verdicts[0].verdict == Verdict.FAITHFUL
+
+    def test_drifted_via_removed_only_fallback(self):
+        """Predicate-aware diff: if the original-state finding is removed
+        but no expected-state finding was added, that's DRIFTED (the
+        redline acted on the right clause but produced something else)."""
+        diff = ModalityChecker().check_diff(
+            "Licensee shall pay all fees.",
+            "Licensor may pay all fees.",  # totally different (subject + modality)
+        )
+        rec = Recommendation(
+            rec_id="REC-024", rec_type="MODIFY",
+            before_modality=Modality.OBLIGATION,
+            before_subject="Licensee",
+            expected_modality=Modality.OBLIGATION,  # memo wanted obligation kept
+            expected_subject="Licensee",            # memo wanted Licensee kept
+            selected=True,
+        )
+        report = RedlineVerdictAssigner().assign(diff, [rec])
+        assert report.verdicts[0].verdict == Verdict.DRIFTED
+
 
 # ---------------------------------------------------------------------------
 # PHANTOM
