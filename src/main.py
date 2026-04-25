@@ -19,9 +19,29 @@ from pathlib import Path
 
 from .extraction.extractor import ContractExtractor
 from .classification.classifier import ClauseClassifier
-from .utils.pdf_reader import extract_text_from_pdf
-from .utils.neo4j_store import Neo4jStore
 from .config import settings
+
+
+def extract_text_from_pdf(path):
+    """Lazy proxy for the pdfplumber-backed PDF reader.
+
+    Importing pdfplumber at module load forces a hard dependency on the
+    cryptography / cffi stack even for users only running text-based
+    subcommands (modality, classify, search, etc.). Defer the import so
+    those paths work without it.
+    """
+    from .utils.pdf_reader import extract_text_from_pdf as _real
+    return _real(path)
+
+
+def Neo4jStore(*args, **kwargs):
+    """Lazy proxy for the neo4j-driver-backed graph store.
+
+    Same rationale as above — many subcommands don't touch Neo4j and
+    shouldn't fail to load when the driver is missing.
+    """
+    from .utils.neo4j_store import Neo4jStore as _real
+    return _real(*args, **kwargs)
 
 
 def cmd_extract(args):
@@ -394,6 +414,111 @@ def cmd_dependencies(args):
         print(f"\nResults saved to: {output_path}")
 
 
+def cmd_modality(args):
+    """Show modality (and optional polarity) analysis for a contract."""
+    from .modality import Modality, ModalityChecker
+
+    file_path = Path(args.pdf_path)
+    if not file_path.exists():
+        print(f"Error: File not found: {file_path}")
+        sys.exit(1)
+
+    print(f"Analyzing modality: {file_path}")
+
+    # Read file (lazy PDF import)
+    if file_path.suffix.lower() == ".pdf":
+        from .utils.pdf_reader import extract_text_from_pdf
+        contract_text = extract_text_from_pdf(file_path)
+    else:
+        with open(file_path, "r", encoding="utf-8", errors="ignore") as f:
+            contract_text = f.read()
+
+    show_n = max(0, int(args.show))
+
+    # ---- Path A: raw-text scan (default, offline-capable, no classifier) ----
+    if not args.with_classifier and not args.with_polarity:
+        report = ModalityChecker().check_analysis(
+            type("Adhoc", (), {
+                "contract_id": file_path.stem,
+                "analyzed_clauses": [type("C", (), {
+                    "text": contract_text,
+                    "cuad_label": None,
+                })()],
+            })()
+        )
+
+        print(f"\n{'='*60}")
+        print(f"MODALITY ANALYSIS: {file_path.name}")
+        print(f"{'='*60}")
+        print(f"\nFindings: {len(report.findings)}")
+        for m in Modality:
+            print(f"  {m.value:11} {report.counts.get(m.value, 0)}")
+
+        if show_n and report.findings:
+            print(f"\nTop {min(show_n, len(report.findings))} findings:")
+            for f in report.findings[:show_n]:
+                subj = (f.subject or "<none>")[:40]
+                print(f"  [{f.modality.value:11}] {f.modal_phrase:18}  "
+                      f"subj={subj!r:42}  strength={f.strength}")
+
+        if args.output:
+            output_path = Path(args.output)
+            with open(output_path, "w") as fh:
+                json.dump(report.to_dict(), fh, indent=2)
+            print(f"\nResults saved to: {output_path}")
+        return
+
+    # ---- Path B: full classifier pipeline (gives cuad_label per finding) ----
+    args.with_classifier = True  # --with-polarity implies --with-classifier
+    from .pipeline import ContractAnalysisPipeline
+
+    pipeline = ContractAnalysisPipeline()
+    analysis = pipeline.analyze(contract_text, contract_id=file_path.stem)
+
+    report = ModalityChecker().check_analysis(analysis)
+
+    print(f"\n{'='*60}")
+    print(f"MODALITY ANALYSIS: {file_path.name}")
+    print(f"{'='*60}")
+    print(f"\nClauses analyzed: {len(analysis.analyzed_clauses)}")
+    print(f"Findings: {len(report.findings)}")
+    for m in Modality:
+        print(f"  {m.value:11} {report.counts.get(m.value, 0)}")
+
+    if show_n and report.findings:
+        print(f"\nTop {min(show_n, len(report.findings))} findings:")
+        for f in report.findings[:show_n]:
+            label = (f.cuad_label or "<no-label>")[:25]
+            subj = (f.subject or "<none>")[:30]
+            print(f"  [{f.modality.value:11}] {label:25}  "
+                  f"{f.modal_phrase:14}  subj={subj!r:32}")
+
+    polarity_report = None
+    if args.with_polarity:
+        from .polarity import PolarityChecker
+        polarity_report = PolarityChecker().check_analysis(analysis)
+        sev = polarity_report.counts_by_severity
+        print(f"\n{'='*60}")
+        print(f"POLARITY ANALYSIS")
+        print(f"{'='*60}")
+        print(f"Profiles: {len(polarity_report.profiles)}")
+        print(f"Findings: {len(polarity_report.findings)}  "
+              f"(CRITICAL {sev.get('CRITICAL', 0)}, HIGH {sev.get('HIGH', 0)}, "
+              f"MODERATE {sev.get('MODERATE', 0)}, LOW {sev.get('LOW', 0)})")
+        for f in polarity_report.findings[:show_n]:
+            print(f"  [{f.severity.value}] {f.kind.value} ({f.fm_code}): "
+                  f"{f.description[:140]}")
+
+    if args.output:
+        output_path = Path(args.output)
+        out = {"modality": report.to_dict()}
+        if polarity_report is not None:
+            out["polarity"] = polarity_report.to_dict()
+        with open(output_path, "w") as fh:
+            json.dump(out, fh, indent=2)
+        print(f"\nResults saved to: {output_path}")
+
+
 def cmd_resolve(args):
     """Run entity resolution on a contract."""
     from .pipeline import ContractAnalysisPipeline
@@ -739,6 +864,29 @@ def main():
         "--no-llm", action="store_true", help="Disable LLM validation of dependencies"
     )
     deps_parser.set_defaults(func=cmd_dependencies)
+
+    # Modality command
+    modality_parser = subparsers.add_parser(
+        "modality", help="Show modality (obligation / permission / prohibition / "
+                         "entitlement) analysis for a contract"
+    )
+    modality_parser.add_argument("pdf_path", help="Path to the contract file")
+    modality_parser.add_argument("-o", "--output", help="Output JSON file path")
+    modality_parser.add_argument(
+        "--with-classifier", action="store_true",
+        help="Run the full classifier pipeline so each finding carries a CUAD "
+             "label (slower; needs ANTHROPIC_API_KEY and the embedding model)"
+    )
+    modality_parser.add_argument(
+        "--with-polarity", action="store_true",
+        help="Also run polarity (FM-B06 / FM-D02) analysis. Implies "
+             "--with-classifier."
+    )
+    modality_parser.add_argument(
+        "--show", type=int, default=20,
+        help="Number of top findings to show in terminal output (default: 20)"
+    )
+    modality_parser.set_defaults(func=cmd_modality)
 
     # Resolve command
     resolve_parser = subparsers.add_parser(
